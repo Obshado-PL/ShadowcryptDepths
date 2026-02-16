@@ -52,6 +52,21 @@ class HapticManager(context: Context) {
                 timings = longArrayOf(0, 25, 40, 25, 40, 25, 40, 30),
                 amplitudes = intArrayOf(0, 100, 0, 140, 0, 180, 0, 255)
             )
+            GameEvent.EnterTreasureVault -> waveform(
+                timings = longArrayOf(0, 10, 20, 10, 20, 15),
+                amplitudes = intArrayOf(0, 60, 0, 80, 0, 100)
+            )
+            GameEvent.EnterArena -> waveform(
+                timings = longArrayOf(0, 30, 40, 30),
+                amplitudes = intArrayOf(0, 180, 0, 200)
+            )
+            GameEvent.EnterTrapGauntlet -> waveform(
+                timings = longArrayOf(0, 15, 20, 15, 20, 15),
+                amplitudes = intArrayOf(0, 100, 0, 120, 0, 100)
+            )
+            GameEvent.EnterShrineRoom -> oneShot(25, 50)
+            GameEvent.EnterLibrary -> oneShot(10, 30)
+            GameEvent.EnterArmory -> oneShot(20, 100)
         }
 
         try {

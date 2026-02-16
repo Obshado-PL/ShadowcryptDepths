@@ -15,5 +15,11 @@ enum class GameEvent {
     Victory,
     TrapTriggered,
     SkillUse,
-    QuestComplete
+    QuestComplete,
+    EnterTreasureVault,
+    EnterArena,
+    EnterTrapGauntlet,
+    EnterShrineRoom,
+    EnterLibrary,
+    EnterArmory
 }

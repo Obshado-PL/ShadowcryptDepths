@@ -93,6 +93,12 @@ class SoundManager {
         GameEvent.TrapTriggered -> generateThud(durationMs = 80, freq = 180.0)
         GameEvent.SkillUse -> generateSweep(durationMs = 150, startFreq = 300.0, endFreq = 600.0)
         GameEvent.QuestComplete -> generateArpeggio(durationMs = 200)
+        GameEvent.EnterTreasureVault -> generateShimmer(durationMs = 200)
+        GameEvent.EnterArena -> generateWarDrum(durationMs = 180)
+        GameEvent.EnterTrapGauntlet -> generateWarning(durationMs = 150)
+        GameEvent.EnterShrineRoom -> generateEtherealChord(durationMs = 250)
+        GameEvent.EnterLibrary -> generateSoftChime(durationMs = 150)
+        GameEvent.EnterArmory -> generateMetallicClang(durationMs = 120)
     }
 
     /** Short click/tick at a fixed frequency */
@@ -207,6 +213,118 @@ class SoundManager {
 
         writeChord(chord1, 0, halfSamples)
         writeChord(chord2, halfSamples, halfSamples)
+        return data
+    }
+
+    /** Sparkly shimmer — rapid high-frequency arpeggiated tones (treasure room) */
+    private fun generateShimmer(durationMs: Int): ShortArray {
+        val freqs = doubleArrayOf(1200.0, 1500.0, 1800.0, 2100.0, 1800.0, 1500.0)
+        val totalSamples = (sampleRate * durationMs) / 1000
+        val data = ShortArray(totalSamples)
+        val samplesPerNote = totalSamples / freqs.size
+
+        for (noteIdx in freqs.indices) {
+            val startSample = noteIdx * samplesPerNote
+            for (i in 0 until samplesPerNote) {
+                val idx = startSample + i
+                if (idx >= totalSamples) break
+                val t = i.toDouble() / sampleRate
+                val envelope = fadeEnvelope(i, samplesPerNote) * 0.5
+                val value = sin(2.0 * PI * freqs[noteIdx] * t) * envelope
+                data[idx] = (value * Short.MAX_VALUE).toInt().toShort()
+            }
+        }
+        return data
+    }
+
+    /** Deep war drum — low punch with resonance (arena room) */
+    private fun generateWarDrum(durationMs: Int): ShortArray {
+        val samples = (sampleRate * durationMs) / 1000
+        val data = ShortArray(samples)
+        val halfSamples = samples / 2
+
+        for (i in 0 until samples) {
+            val t = i.toDouble() / sampleRate
+            val progress = i.toDouble() / samples
+            // Two hits: one at start, one at midpoint
+            val inFirstHit = i < halfSamples
+            val localProgress = if (inFirstHit) i.toDouble() / halfSamples else (i - halfSamples).toDouble() / halfSamples
+            val envelope = if (localProgress < 0.05) localProgress / 0.05 else (1.0 - localProgress)
+            val freq = if (inFirstHit) 80.0 else 100.0
+            val sine = sin(2.0 * PI * freq * t)
+            val square = if (sine > 0) 0.2 else -0.2
+            val value = (sine * 0.6 + square) * envelope.coerceIn(0.0, 1.0) * 0.8
+            data[i] = (value * Short.MAX_VALUE).toInt().toShort()
+        }
+        return data
+    }
+
+    /** Tense warning tone — oscillating low buzz (trap gauntlet) */
+    private fun generateWarning(durationMs: Int): ShortArray {
+        val samples = (sampleRate * durationMs) / 1000
+        val data = ShortArray(samples)
+        for (i in 0 until samples) {
+            val t = i.toDouble() / sampleRate
+            val envelope = fadeEnvelope(i, samples)
+            // Two dissonant tones creating an unsettling buzz
+            val tone1 = sin(2.0 * PI * 220.0 * t)
+            val tone2 = sin(2.0 * PI * 233.0 * t) // slight detune for tension
+            val value = (tone1 * 0.4 + tone2 * 0.4) * envelope * 0.6
+            data[i] = (value * Short.MAX_VALUE).toInt().toShort()
+        }
+        return data
+    }
+
+    /** Ethereal sustained chord — calm and peaceful (shrine room) */
+    private fun generateEtherealChord(durationMs: Int): ShortArray {
+        val samples = (sampleRate * durationMs) / 1000
+        val data = ShortArray(samples)
+        // Open fifth chord, airy feel
+        val freqs = doubleArrayOf(440.0, 550.0, 660.0)
+        for (i in 0 until samples) {
+            val t = i.toDouble() / sampleRate
+            val envelope = fadeEnvelope(i, samples)
+            var value = 0.0
+            for (f in freqs) {
+                value += sin(2.0 * PI * f * t)
+            }
+            value = value / freqs.size * envelope * 0.45
+            data[i] = (value * Short.MAX_VALUE).toInt().toShort()
+        }
+        return data
+    }
+
+    /** Soft chime — gentle bell-like tone (library) */
+    private fun generateSoftChime(durationMs: Int): ShortArray {
+        val samples = (sampleRate * durationMs) / 1000
+        val data = ShortArray(samples)
+        val freq = 900.0
+        for (i in 0 until samples) {
+            val t = i.toDouble() / sampleRate
+            val progress = i.toDouble() / samples
+            // Bell envelope: instant attack, exponential decay
+            val envelope = if (progress < 0.02) progress / 0.02 else kotlin.math.exp(-4.0 * progress)
+            val value = sin(2.0 * PI * freq * t) * 0.4 +
+                    sin(2.0 * PI * freq * 2.0 * t) * 0.15 // harmonic for bell quality
+            data[i] = (value * envelope * 0.5 * Short.MAX_VALUE).toInt().toShort()
+        }
+        return data
+    }
+
+    /** Metallic clang — sharp anvil-like hit (armory) */
+    private fun generateMetallicClang(durationMs: Int): ShortArray {
+        val samples = (sampleRate * durationMs) / 1000
+        val data = ShortArray(samples)
+        for (i in 0 until samples) {
+            val t = i.toDouble() / sampleRate
+            val progress = i.toDouble() / samples
+            // Sharp attack, fast decay with inharmonic overtones
+            val envelope = if (progress < 0.02) progress / 0.02 else kotlin.math.exp(-6.0 * progress)
+            val value = sin(2.0 * PI * 350.0 * t) * 0.5 +
+                    sin(2.0 * PI * 587.0 * t) * 0.3 +  // inharmonic overtone
+                    sin(2.0 * PI * 823.0 * t) * 0.15    // high metallic ring
+            data[i] = (value * envelope * 0.7 * Short.MAX_VALUE).toInt().toShort()
+        }
         return data
     }
 

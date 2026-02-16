@@ -15,6 +15,7 @@ import com.shadowcrypt.game.model.GameEvent
 import com.shadowcrypt.game.model.GameState
 import com.shadowcrypt.game.model.GameStatus
 import com.shadowcrypt.game.model.Position
+import com.shadowcrypt.game.model.RoomType
 import com.shadowcrypt.game.model.Visibility
 import com.shadowcrypt.game.ui.theme.HealthRed
 import com.shadowcrypt.game.ui.theme.XpGold
@@ -379,6 +380,24 @@ class GameViewModel : ViewModel() {
         // Trap triggered
         if (new.lastTrapTriggered) {
             events.add(GameEvent.TrapTriggered)
+        }
+
+        // Entered a special room type
+        if (new.player.position != old.player.position) {
+            val oldRoom = old.dungeon.rooms.find { it.contains(old.player.position) }
+            val newRoom = new.dungeon.rooms.find { it.contains(new.player.position) }
+            if (newRoom != null && newRoom != oldRoom && newRoom.type != RoomType.Normal) {
+                val roomEvent = when (newRoom.type) {
+                    RoomType.TreasureVault -> GameEvent.EnterTreasureVault
+                    RoomType.Arena -> GameEvent.EnterArena
+                    RoomType.TrapGauntlet -> GameEvent.EnterTrapGauntlet
+                    RoomType.ShrineRoom -> GameEvent.EnterShrineRoom
+                    RoomType.Library -> GameEvent.EnterLibrary
+                    RoomType.Armory -> GameEvent.EnterArmory
+                    RoomType.Normal -> null
+                }
+                if (roomEvent != null) events.add(roomEvent)
+            }
         }
 
         return events
