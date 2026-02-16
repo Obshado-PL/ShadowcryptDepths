@@ -24,9 +24,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.shadowcrypt.game.ui.theme.DungeonAmber80
 import com.shadowcrypt.game.ui.theme.DungeonPurple80
 import com.shadowcrypt.game.ui.theme.GameBackground
+import com.shadowcrypt.game.ui.theme.TextPrimary
 import com.shadowcrypt.game.ui.theme.TextSecondary
 import com.shadowcrypt.game.ui.theme.VoidAccent
 
@@ -92,7 +94,7 @@ fun MainMenuScreen(
             Text(
                 text = "A Roguelike Dungeon Crawler",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                color = TextPrimary.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center
             )
 
@@ -109,8 +111,8 @@ fun MainMenuScreen(
                         .height(52.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = DungeonAmber80.copy(alpha = 0.3f),
-                        contentColor = DungeonAmber80
+                        containerColor = DungeonAmber80.copy(alpha = 0.6f),
+                        contentColor = Color(0xFF1A1000)
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -130,8 +132,8 @@ fun MainMenuScreen(
                     .height(52.dp)
                     .clip(RoundedCornerShape(8.dp)),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = DungeonPurple80.copy(alpha = 0.3f),
-                    contentColor = DungeonPurple80
+                    containerColor = DungeonPurple80.copy(alpha = 0.6f),
+                    contentColor = Color(0xFF1A0A30)
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -151,8 +153,8 @@ fun MainMenuScreen(
                     .height(48.dp)
                     .clip(RoundedCornerShape(8.dp)),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = DungeonAmber80.copy(alpha = 0.3f),
-                    contentColor = DungeonAmber80
+                    containerColor = DungeonAmber80.copy(alpha = 0.6f),
+                    contentColor = Color(0xFF1A1000)
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -170,12 +172,14 @@ fun MainMenuScreen(
                 modifier = Modifier
                     .width(220.dp)
                     .height(48.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = TextPrimary
+                ),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = "UNLOCKS",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondary
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
 
@@ -187,12 +191,14 @@ fun MainMenuScreen(
                 modifier = Modifier
                     .width(220.dp)
                     .height(48.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = TextPrimary
+                ),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = "RUN HISTORY",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondary
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
 
@@ -204,12 +210,14 @@ fun MainMenuScreen(
                 modifier = Modifier
                     .width(220.dp)
                     .height(48.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = TextPrimary
+                ),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = "SETTINGS",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondary
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
 
