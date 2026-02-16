@@ -36,7 +36,6 @@ val PlayerColor = Color(0xFF4488FF)          // Hero blue
 val EnemyColor = Color(0xFFFF4444)           // Enemy red
 val BossColor = Color(0xFFAA00FF)            // Boss purple
 val ItemColor = Color(0xFFFFAA00)            // Item gold
-val NpcColor = Color(0xFF44DD44)             // NPC green
 
 // ===== Item Rarity Colors =====
 
@@ -55,8 +54,6 @@ val FogExplored = Color(0x99000000)          // Semi-transparent (previously see
 
 val HealthRed = Color(0xFFFF4444)            // HP bar color
 val HealthRedDark = Color(0xFF661111)        // HP bar background
-val ManaBlue = Color(0xFF4488FF)             // MP bar color
-val ManaBlueDark = Color(0xFF112266)         // MP bar background
 val XpGold = Color(0xFFFFD700)              // XP bar color
 val XpGoldDark = Color(0xFF4A3A00)          // XP bar background
 val TextPrimary = Color(0xFFFFFFFF)          // Main text white

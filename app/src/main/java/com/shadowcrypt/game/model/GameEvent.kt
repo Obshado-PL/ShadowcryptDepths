@@ -1,0 +1,17 @@
+package com.shadowcrypt.game.model
+
+enum class GameEvent {
+    PlayerMove,
+    PlayerAttack,
+    PlayerHit,
+    EnemyKilled,
+    BossKilled,
+    ItemPickup,
+    ItemEquip,
+    ItemUse,
+    LevelUp,
+    FloorDescend,
+    PlayerDeath,
+    Victory,
+    TrapTriggered
+}

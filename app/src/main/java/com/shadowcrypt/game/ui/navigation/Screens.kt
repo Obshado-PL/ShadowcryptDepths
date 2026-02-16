@@ -11,9 +11,8 @@ import kotlinx.serialization.Serializable
  *
  * Screen flow:
  *   MainMenu → ClassSelect → Game(classId, seed) → GameOver(stats)
- *       ↑                           ↓                    |
- *       |                      Inventory                  |
- *       └─────────────────────────────────────────────────┘
+ *       ↑                                               |
+ *       └───────────────────────────────────────────────┘
  *       ↕           ↕
  *    Settings     Unlocks
  */
@@ -24,7 +23,7 @@ object MainMenuRoute
 
 /** Character class selection screen before starting a run */
 @Serializable
-object ClassSelectRoute
+data class ClassSelectRoute(val isDaily: Boolean = false)
 
 /**
  * The main dungeon gameplay screen.
@@ -35,12 +34,10 @@ object ClassSelectRoute
 @Serializable
 data class GameRoute(
     val classId: String,
-    val seed: Long = System.currentTimeMillis()
+    val seed: Long = System.currentTimeMillis(),
+    val loadSave: Boolean = false,
+    val difficulty: String = "Normal"
 )
-
-/** Full-screen inventory and equipment management */
-@Serializable
-object InventoryRoute
 
 /**
  * Game over screen showing run statistics and meta-progression earned.
@@ -57,7 +54,8 @@ data class GameOverRoute(
     val enemiesKilled: Int,
     val turnsTaken: Int,
     val score: Int,
-    val won: Boolean
+    val won: Boolean,
+    val lastMessages: String = ""
 )
 
 /** Settings screen for sound, haptics, and accessibility toggles */
@@ -67,3 +65,7 @@ object SettingsRoute
 /** Unlocks screen showing all permanent meta-progression */
 @Serializable
 object UnlocksRoute
+
+/** Run history screen showing past run records */
+@Serializable
+object RunHistoryRoute

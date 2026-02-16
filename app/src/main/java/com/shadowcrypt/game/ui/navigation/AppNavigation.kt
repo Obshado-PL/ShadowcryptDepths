@@ -9,11 +9,24 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shadowcrypt.game.ServiceLocator
+import com.shadowcrypt.game.data.SettingsRepository
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import java.time.LocalDate
+import com.shadowcrypt.game.data.GameSaveManager
+import com.shadowcrypt.game.ui.classselect.ClassSelectScreen
+import com.shadowcrypt.game.ui.game.GameScreen
+import com.shadowcrypt.game.ui.gameover.GameOverScreen
 import com.shadowcrypt.game.ui.mainmenu.MainMenuScreen
+import com.shadowcrypt.game.ui.runhistory.RunHistoryScreen
+import com.shadowcrypt.game.ui.settings.SettingsScreen
+import com.shadowcrypt.game.ui.unlocks.UnlocksScreen
 
 /** Duration for all screen transitions (400ms with smooth deceleration) */
 private const val NAV_ANIM_DURATION = 400
@@ -75,39 +88,65 @@ fun AppNavigation() {
                 fadeIn(animationSpec = tween(NAV_ANIM_DURATION, easing = FastOutSlowInEasing))
             }
         ) {
+            val context = LocalContext.current
+            val hasSave = GameSaveManager.hasSave(context)
             MainMenuScreen(
                 onNewRun = {
-                    navController.navigate(ClassSelectRoute)
+                    navController.navigate(ClassSelectRoute())
+                },
+                onContinue = if (hasSave) {
+                    {
+                        navController.navigate(
+                            GameRoute(classId = "", seed = 0L, loadSave = true)
+                        ) {
+                            popUpTo(MainMenuRoute)
+                        }
+                    }
+                } else null,
+                onDailyChallenge = {
+                    navController.navigate(ClassSelectRoute(isDaily = true))
                 },
                 onSettings = {
                     navController.navigate(SettingsRoute)
                 },
                 onUnlocks = {
                     navController.navigate(UnlocksRoute)
+                },
+                onRunHistory = {
+                    navController.navigate(RunHistoryRoute)
                 }
             )
         }
 
         // ===== Class Select Screen =====
-        // Player picks their character class before starting a run.
-        // TODO: Phase 5 — implement ClassSelectScreen
-        composable<ClassSelectRoute> {
-            // Placeholder: for now, start a game directly as warrior
-            MainMenuScreen(
-                onNewRun = {
-                    navController.navigate(GameRoute(classId = "warrior")) {
+        composable<ClassSelectRoute> { backStackEntry ->
+            val route = backStackEntry.toRoute<ClassSelectRoute>()
+            val currentSettings by ServiceLocator.settingsRepository.settings.collectAsStateWithLifecycle(
+                initialValue = SettingsRepository.Settings()
+            )
+            ClassSelectScreen(
+                onClassSelected = { classId ->
+                    val seed = if (route.isDaily) {
+                        LocalDate.now().toEpochDay() * 1_000_003L
+                    } else {
+                        System.currentTimeMillis()
+                    }
+                    navController.navigate(
+                        GameRoute(
+                            classId = classId,
+                            seed = seed,
+                            difficulty = currentSettings.difficulty
+                        )
+                    ) {
                         popUpTo(MainMenuRoute)
                     }
-                },
-                onSettings = {},
-                onUnlocks = {}
+                }
             )
         }
 
         // ===== Game Screen =====
         // The main dungeon gameplay screen.
         // Enters with zoom-in for dramatic "entering the dungeon" effect.
-        // TODO: Phase 2 — implement GameScreen
         composable<GameRoute>(
             enterTransition = {
                 scaleIn(
@@ -123,20 +162,31 @@ fun AppNavigation() {
             }
         ) { backStackEntry ->
             val route = backStackEntry.toRoute<GameRoute>()
-            // Placeholder: navigate back to menu for now
-            MainMenuScreen(
-                onNewRun = {
-                    navController.popBackStack(MainMenuRoute, inclusive = false)
-                },
-                onSettings = {},
-                onUnlocks = {}
+            val context = LocalContext.current
+            GameScreen(
+                classId = route.classId,
+                seed = route.seed,
+                loadSave = route.loadSave,
+                difficultyName = route.difficulty,
+                onGameOver = { floorReached, enemiesKilled, turnsTaken, won, lastMessages ->
+                    GameSaveManager.deleteSave(context)
+                    navController.navigate(
+                        GameOverRoute(
+                            floorReached = floorReached,
+                            enemiesKilled = enemiesKilled,
+                            turnsTaken = turnsTaken,
+                            score = floorReached * 100 + enemiesKilled * 10 + maxOf(0, 1000 - turnsTaken),
+                            won = won,
+                            lastMessages = lastMessages
+                        )
+                    ) {
+                        popUpTo(MainMenuRoute)
+                    }
+                }
             )
         }
 
         // ===== Game Over Screen =====
-        // Shows run statistics and meta-progression earned.
-        // Zooms in for dramatic death/victory reveal.
-        // TODO: Phase 5 — implement GameOverScreen
         composable<GameOverRoute>(
             enterTransition = {
                 scaleIn(
@@ -146,40 +196,44 @@ fun AppNavigation() {
             }
         ) { backStackEntry ->
             val route = backStackEntry.toRoute<GameOverRoute>()
-            MainMenuScreen(
+            GameOverScreen(
+                floorReached = route.floorReached,
+                enemiesKilled = route.enemiesKilled,
+                turnsTaken = route.turnsTaken,
+                score = route.score,
+                won = route.won,
+                lastMessages = route.lastMessages,
                 onNewRun = {
                     navController.navigate(MainMenuRoute) {
                         popUpTo(MainMenuRoute) { inclusive = true }
                     }
                 },
-                onSettings = {},
-                onUnlocks = {}
+                onTryAgain = {
+                    navController.navigate(ClassSelectRoute) {
+                        popUpTo(MainMenuRoute)
+                    }
+                }
             )
         }
 
         // ===== Settings Screen =====
-        // Sound, haptics, and accessibility toggles.
-        // TODO: Phase 6 — implement SettingsScreen
         composable<SettingsRoute> {
-            MainMenuScreen(
-                onNewRun = {
-                    navController.popBackStack(MainMenuRoute, inclusive = false)
-                },
-                onSettings = {},
-                onUnlocks = {}
+            SettingsScreen(
+                onBack = { navController.popBackStack() }
             )
         }
 
         // ===== Unlocks Screen =====
-        // Shows all permanent meta-progression unlocks.
-        // TODO: Phase 6 — implement UnlocksScreen
         composable<UnlocksRoute> {
-            MainMenuScreen(
-                onNewRun = {
-                    navController.popBackStack(MainMenuRoute, inclusive = false)
-                },
-                onSettings = {},
-                onUnlocks = {}
+            UnlocksScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ===== Run History Screen =====
+        composable<RunHistoryRoute> {
+            RunHistoryScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }

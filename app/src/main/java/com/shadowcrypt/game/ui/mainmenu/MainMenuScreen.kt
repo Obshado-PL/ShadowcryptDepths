@@ -44,8 +44,11 @@ import com.shadowcrypt.game.ui.theme.VoidAccent
 @Composable
 fun MainMenuScreen(
     onNewRun: () -> Unit,
+    onContinue: (() -> Unit)? = null,
+    onDailyChallenge: () -> Unit,
     onSettings: () -> Unit,
-    onUnlocks: () -> Unit
+    onUnlocks: () -> Unit,
+    onRunHistory: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -97,6 +100,28 @@ fun MainMenuScreen(
 
             // ===== Menu Buttons =====
 
+            // Continue button (only shown if save exists)
+            if (onContinue != null) {
+                Button(
+                    onClick = onContinue,
+                    modifier = Modifier
+                        .width(220.dp)
+                        .height(52.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = DungeonAmber80.copy(alpha = 0.3f),
+                        contentColor = DungeonAmber80
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "CONTINUE",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             // New Run button (primary action)
             Button(
                 onClick = onNewRun,
@@ -116,6 +141,27 @@ fun MainMenuScreen(
                 )
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Daily Challenge button
+            Button(
+                onClick = onDailyChallenge,
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = DungeonAmber80.copy(alpha = 0.3f),
+                    contentColor = DungeonAmber80
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "DAILY CHALLENGE",
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Unlocks button
@@ -128,6 +174,23 @@ fun MainMenuScreen(
             ) {
                 Text(
                     text = "UNLOCKS",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = TextSecondary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Run History button
+            OutlinedButton(
+                onClick = onRunHistory,
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(48.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "RUN HISTORY",
                     style = MaterialTheme.typography.labelLarge,
                     color = TextSecondary
                 )

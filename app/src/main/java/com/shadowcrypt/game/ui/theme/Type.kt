@@ -75,6 +75,13 @@ val Typography = Typography(
         lineHeight = 22.sp,
         letterSpacing = 0.5.sp
     ),
+    // Title text (inventory overlay header, item names)
+    titleLarge = TextStyle(
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Bold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp
+    ),
     // Small labels (item rarity, status effect names)
     labelSmall = TextStyle(
         fontFamily = FontFamily.Monospace,
