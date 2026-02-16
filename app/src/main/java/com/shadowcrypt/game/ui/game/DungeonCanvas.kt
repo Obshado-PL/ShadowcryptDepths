@@ -444,6 +444,13 @@ private fun getTileColor(tile: Tile, theme: FloorTheme, col: Int, row: Int): Col
         Tile.Trap -> TrapColor
         Tile.Water -> WaterColor
         Tile.Lava -> LavaColor
+        Tile.Pillar -> when (theme) {
+            FloorTheme.Crypt -> CryptWall.lighten(0.06f)
+            FloorTheme.Sewers -> SewerWall.lighten(0.06f)
+            FloorTheme.Caverns -> CavernWall.lighten(0.06f)
+            FloorTheme.Inferno -> InfernoWall.lighten(0.06f)
+            FloorTheme.Void -> VoidWall.lighten(0.06f)
+        }
     }
 }
 

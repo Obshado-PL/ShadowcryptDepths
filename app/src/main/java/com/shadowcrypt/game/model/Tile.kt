@@ -12,7 +12,8 @@ enum class Tile(val walkable: Boolean, val transparent: Boolean) {
     StairsUp(walkable = true, transparent = true),
     Trap(walkable = true, transparent = true),
     Water(walkable = true, transparent = true),
-    Lava(walkable = false, transparent = true)
+    Lava(walkable = false, transparent = true),
+    Pillar(walkable = false, transparent = false)
 }
 
 /** Grid coordinate using x = column, y = row */

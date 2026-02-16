@@ -50,9 +50,11 @@ object EnemySpawner {
                     floorNumber <= 8 -> 3 to 5
                     else -> 4 to 6
                 }
-                val adjustedMin = (minEnemies + difficulty.enemyCountBonus).coerceAtLeast(1)
-                val adjustedMax = (maxEnemies + difficulty.enemyCountBonus).coerceAtLeast(adjustedMin)
-                val count = random.nextInt(adjustedMin, adjustedMax + 1)
+                val roomMult = room.type.enemyMultiplier
+                val adjustedMin = ((minEnemies * roomMult).toInt() + difficulty.enemyCountBonus).coerceAtLeast(0)
+                val adjustedMax = ((maxEnemies * roomMult).toInt() + difficulty.enemyCountBonus).coerceAtLeast(adjustedMin)
+                if (adjustedMax == 0) continue // Skip rooms with no enemies (e.g. ShrineRoom, TrapGauntlet)
+                val count = random.nextInt(adjustedMin.coerceAtLeast(1), adjustedMax + 1)
                 val positions = getSpawnPositions(
                     room, count, enemies.map { it.position }.toSet(), random
                 )
@@ -124,7 +126,7 @@ object EnemySpawner {
         occupied: Set<Position>,
         random: Random
     ): List<Position> {
-        val available = room.positions()
+        val available = room.floorPositions()
             .filter { it !in occupied && it != room.center }
             .toMutableList()
         available.shuffle(random)

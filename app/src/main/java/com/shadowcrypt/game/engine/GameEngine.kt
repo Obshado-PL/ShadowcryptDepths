@@ -746,12 +746,18 @@ class GameEngine(
 
         for (room in rooms) {
             if (room.center == playerStart) continue
-            if (random.nextInt(100) >= 30) continue // 30% chance per room
+
+            val type: RoomEventType? = when {
+                room.type.guaranteedInteractable != null -> room.type.guaranteedInteractable
+                random.nextInt(100) < 30 -> types[random.nextInt(types.size)]
+                else -> null
+            }
+
+            if (type == null) continue
 
             val pos = room.center
             if (pos in occupiedPositions) continue
 
-            val type = types[random.nextInt(types.size)]
             result.add(Interactable(pos, type))
         }
 

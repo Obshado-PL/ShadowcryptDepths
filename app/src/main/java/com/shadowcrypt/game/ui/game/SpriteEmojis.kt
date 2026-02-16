@@ -14,6 +14,7 @@ fun tileEmoji(tile: Tile): String? = when (tile) {
     Tile.Trap -> "\u26A0\uFE0F"            // ⚠️
     Tile.Water -> "\uD83C\uDF0A"           // 🌊
     Tile.Lava -> "\uD83D\uDD25"            // 🔥
+    Tile.Pillar -> "\uD83E\uDDF1"          // 🧱
 }
 
 /** Returns emoji for the player based on class ID. */

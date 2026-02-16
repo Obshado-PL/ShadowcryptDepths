@@ -10,6 +10,7 @@ import com.shadowcrypt.game.model.ItemTemplates
 import com.shadowcrypt.game.model.Position
 import com.shadowcrypt.game.model.Rarity
 import com.shadowcrypt.game.model.Room
+import com.shadowcrypt.game.model.RoomType
 import kotlin.random.Random
 
 object ItemGenerator {
@@ -44,12 +45,17 @@ object ItemGenerator {
 
         for (room in rooms) {
             if (room == playerRoom) continue
-            if (random.nextInt(100) < dropChance) {
-                val available = room.positions()
+            val roomDropChance = (dropChance * room.type.itemDropBoost).toInt().coerceIn(5, 80)
+            if (random.nextInt(100) < roomDropChance) {
+                val available = room.floorPositions()
                     .filter { it !in usedPositions }
                 if (available.isNotEmpty()) {
                     val pos = available[random.nextInt(available.size)]
-                    val item = generateItem(floor, random)
+                    val item = if (room.type == RoomType.Armory) {
+                        generateEquipmentItem(floor, random)
+                    } else {
+                        generateItem(floor, random)
+                    }
                     floorItems.add(FloorItem(item, pos))
                     usedPositions.add(pos)
                 }
@@ -60,7 +66,7 @@ object ItemGenerator {
             val safeRooms = rooms.filter { it != playerRoom }
             if (safeRooms.isNotEmpty()) {
                 val room = safeRooms[random.nextInt(safeRooms.size)]
-                val available = room.positions().filter { it !in usedPositions }
+                val available = room.floorPositions().filter { it !in usedPositions }
                 if (available.isNotEmpty()) {
                     val pos = available[random.nextInt(available.size)]
                     val potion = createItem(ItemTemplates.HealthPotion, Rarity.Common)
@@ -70,6 +76,19 @@ object ItemGenerator {
         }
 
         return floorItems
+    }
+
+    /** Generates equipment (weapon/armor/accessory) for Armory rooms, minimum Uncommon rarity. */
+    private fun generateEquipmentItem(floor: Int, random: Random): Item {
+        val templates = ItemTemplates.forFloor(floor)
+        val equipTemplates = templates.filter { it.equipSlot != null }
+        val template = if (equipTemplates.isNotEmpty()) {
+            weightedSelect(equipTemplates, random)
+        } else {
+            weightedSelect(templates, random)
+        }
+        val rarity = rollRarity(floor, random, minRarity = Rarity.Uncommon)
+        return createItem(template, rarity)
     }
 
     fun rollTreasureItem(floor: Int, random: Random): Item {
