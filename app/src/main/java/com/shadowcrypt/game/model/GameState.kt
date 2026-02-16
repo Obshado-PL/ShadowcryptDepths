@@ -30,7 +30,8 @@ data class GameState(
     val lastTrapTriggered: Boolean = false,
     val lastCritical: Boolean = false,
     val difficulty: Difficulty = Difficulty.Normal,
-    val quests: List<Quest> = emptyList()
+    val quests: List<Quest> = emptyList(),
+    val isDaily: Boolean = false
 ) {
     fun withMessage(msg: String): GameState =
         copy(messageLog = (messageLog + msg).takeLast(50))

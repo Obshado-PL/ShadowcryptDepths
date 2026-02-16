@@ -1,6 +1,7 @@
 package com.shadowcrypt.game
 
 import android.app.Application
+import com.shadowcrypt.game.audio.AmbientPlayer
 import com.shadowcrypt.game.audio.SoundManager
 import com.shadowcrypt.game.data.MetaProgressRepository
 import com.shadowcrypt.game.data.SettingsRepository
@@ -28,6 +29,8 @@ object ServiceLocator {
         private set
     lateinit var hapticManager: HapticManager
         private set
+    lateinit var ambientPlayer: AmbientPlayer
+        private set
 
     fun initialize(context: Application) {
         if (initialized) return
@@ -38,5 +41,6 @@ object ServiceLocator {
         metaProgressRepository = MetaProgressRepository(context)
         soundManager = SoundManager()
         hapticManager = HapticManager(context)
+        ambientPlayer = AmbientPlayer()
     }
 }

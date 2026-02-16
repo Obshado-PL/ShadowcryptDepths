@@ -5,8 +5,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
 import kotlin.math.max
 
 private val Context.dataStore by preferencesDataStore(name = "meta_progress")
@@ -58,6 +60,8 @@ class MetaProgressRepository(private val context: Context) {
         val UPGRADE_SPD = intPreferencesKey("upgrade_spd")
         val UNLOCKED_CLASSES = stringSetPreferencesKey("unlocked_classes")
         val DISCOVERED_ENEMIES = stringSetPreferencesKey("discovered_enemies")
+        val DAILY_BEST_SCORE = intPreferencesKey("daily_best_score")
+        val DAILY_BEST_DATE = stringPreferencesKey("daily_best_date")
     }
 
     val progress: Flow<MetaProgress> = context.dataStore.data.map { prefs ->
@@ -160,6 +164,26 @@ class MetaProgressRepository(private val context: Context) {
             }
         }
         return success
+    }
+
+    suspend fun recordDailyScore(score: Int) {
+        val today = LocalDate.now().toString()
+        context.dataStore.edit { prefs ->
+            val storedDate = prefs[DAILY_BEST_DATE] ?: ""
+            if (storedDate != today) {
+                prefs[DAILY_BEST_DATE] = today
+                prefs[DAILY_BEST_SCORE] = score
+            } else {
+                prefs[DAILY_BEST_SCORE] = max(prefs[DAILY_BEST_SCORE] ?: 0, score)
+            }
+        }
+    }
+
+    val dailyBest: Flow<Int> = context.dataStore.data.map { prefs ->
+        val date = prefs[DAILY_BEST_DATE] ?: ""
+        if (date == LocalDate.now().toString()) {
+            prefs[DAILY_BEST_SCORE] ?: 0
+        } else 0
     }
 
     suspend fun discoverEnemies(enemyTypeIds: Set<String>) {

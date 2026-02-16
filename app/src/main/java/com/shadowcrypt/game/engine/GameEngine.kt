@@ -237,7 +237,8 @@ class GameEngine(
             floorItems = newFloorItems,
             interactables = newInteractables,
             difficulty = state.difficulty,
-            quests = newQuests
+            quests = newQuests,
+            isDaily = state.isDaily
         )
     }
 

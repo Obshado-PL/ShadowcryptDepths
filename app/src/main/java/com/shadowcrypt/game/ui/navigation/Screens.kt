@@ -41,7 +41,8 @@ data class GameRoute(
     val upgradeAtk: Int = 0,
     val upgradeDef: Int = 0,
     val upgradeMag: Int = 0,
-    val upgradeSpd: Int = 0
+    val upgradeSpd: Int = 0,
+    val isDaily: Boolean = false
 )
 
 /**
@@ -60,7 +61,8 @@ data class GameOverRoute(
     val turnsTaken: Int,
     val score: Int,
     val won: Boolean,
-    val lastMessages: String = ""
+    val lastMessages: String = "",
+    val isDaily: Boolean = false
 )
 
 /** Settings screen for sound, haptics, and accessibility toggles */

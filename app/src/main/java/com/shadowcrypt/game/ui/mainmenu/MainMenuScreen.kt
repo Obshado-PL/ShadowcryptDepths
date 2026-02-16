@@ -48,6 +48,7 @@ fun MainMenuScreen(
     onNewRun: () -> Unit,
     onContinue: (() -> Unit)? = null,
     onDailyChallenge: () -> Unit,
+    dailyBestScore: Int = 0,
     onSettings: () -> Unit,
     onUnlocks: () -> Unit,
     onRunHistory: () -> Unit
@@ -161,6 +162,14 @@ fun MainMenuScreen(
                 Text(
                     text = "DAILY CHALLENGE",
                     style = MaterialTheme.typography.labelLarge
+                )
+            }
+            if (dailyBestScore > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Today's Best: $dailyBestScore",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = DungeonAmber80.copy(alpha = 0.7f)
                 )
             }
 

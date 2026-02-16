@@ -10,6 +10,7 @@ import com.shadowcrypt.game.engine.InventoryEngine
 import com.shadowcrypt.game.engine.Pathfinding
 import com.shadowcrypt.game.model.Difficulty
 import com.shadowcrypt.game.model.Direction
+import com.shadowcrypt.game.model.FloorTheme
 import com.shadowcrypt.game.model.EquipSlot
 import com.shadowcrypt.game.model.GameEvent
 import com.shadowcrypt.game.model.GameState
@@ -52,19 +53,32 @@ class GameViewModel : ViewModel() {
     private val _playerFlashUntil = MutableStateFlow(0L)
     val playerFlashUntil: StateFlow<Long> = _playerFlashUntil.asStateFlow()
 
+    private val _transitionFloor = MutableStateFlow(0)
+    val transitionFloor: StateFlow<Int> = _transitionFloor.asStateFlow()
+
+    private val _transitionTheme = MutableStateFlow<FloorTheme?>(null)
+    val transitionTheme: StateFlow<FloorTheme?> = _transitionTheme.asStateFlow()
+
     private var autoWalkJob: Job? = null
 
     fun initGame(
         classId: String, seed: Long, difficulty: Difficulty = Difficulty.Normal,
-        hpBonus: Int = 0, atkBonus: Int = 0, defBonus: Int = 0, magBonus: Int = 0, spdBonus: Int = 0
+        hpBonus: Int = 0, atkBonus: Int = 0, defBonus: Int = 0, magBonus: Int = 0, spdBonus: Int = 0,
+        isDaily: Boolean = false
     ) {
         if (_gameState.value != null) return
 
         viewModelScope.launch(Dispatchers.Default) {
             _isLoading.value = true
             val state = engine.newGame(classId, seed, difficulty, hpBonus, atkBonus, defBonus, magBonus, spdBonus)
+                .copy(isDaily = isDaily)
             _gameState.value = state
             _isLoading.value = false
+            // Start ambient music for the initial floor theme
+            ServiceLocator.ambientPlayer.apply {
+                setTheme(state.dungeon.theme)
+                start()
+            }
         }
     }
 
@@ -84,6 +98,7 @@ class GameViewModel : ViewModel() {
     private fun autoSave() {
         val state = _gameState.value ?: return
         if (state.status != GameStatus.Playing) return
+        if (state.isDaily) return  // No saving daily runs
         val context = ServiceLocator.appContext ?: return
         viewModelScope.launch(Dispatchers.IO) {
             GameSaveManager.save(context, state)
@@ -128,11 +143,16 @@ class GameViewModel : ViewModel() {
         cancelAutoWalk()
 
         viewModelScope.launch(Dispatchers.Default) {
+            val nextFloor = current.player.currentFloor + 1
+            _transitionFloor.value = nextFloor
+            _transitionTheme.value = FloorTheme.forFloor(nextFloor)
             _isLoading.value = true
             val newState = engine.descendStairs(current)
             fireEvents(listOf(GameEvent.FloorDescend))
             _gameState.value = newState
             _isLoading.value = false
+            // Crossfade ambient to new floor theme
+            ServiceLocator.ambientPlayer.setTheme(newState.dungeon.theme)
             autoSave()
         }
     }
@@ -401,6 +421,11 @@ class GameViewModel : ViewModel() {
         }
 
         return events
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        ServiceLocator.ambientPlayer.stop()
     }
 
     private fun fireEvents(events: List<GameEvent>) {

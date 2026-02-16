@@ -1,6 +1,10 @@
 package com.shadowcrypt.game.ui.game
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +36,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.shadowcrypt.game.ServiceLocator
 import com.shadowcrypt.game.model.Difficulty
+import com.shadowcrypt.game.model.Direction
+import com.shadowcrypt.game.model.Enemy
 import com.shadowcrypt.game.model.GameStatus
+import com.shadowcrypt.game.model.Visibility
 import com.shadowcrypt.game.ui.theme.DungeonPurple80
 import kotlinx.coroutines.launch
 import com.shadowcrypt.game.ui.theme.GameBackground
@@ -51,6 +58,7 @@ fun GameScreen(
     upgradeDef: Int = 0,
     upgradeMag: Int = 0,
     upgradeSpd: Int = 0,
+    isDaily: Boolean = false,
     onGameOver: (floorReached: Int, enemiesKilled: Int, turnsTaken: Int, won: Boolean, lastMessages: String) -> Unit,
     viewModel: GameViewModel = viewModel()
 ) {
@@ -60,12 +68,14 @@ fun GameScreen(
             viewModel.loadSavedGame(context)
         } else {
             val diff = Difficulty.entries.find { it.name == difficultyName } ?: Difficulty.Normal
-            viewModel.initGame(classId, seed, diff, upgradeHp, upgradeAtk, upgradeDef, upgradeMag, upgradeSpd)
+            viewModel.initGame(classId, seed, diff, upgradeHp, upgradeAtk, upgradeDef, upgradeMag, upgradeSpd, isDaily)
         }
     }
 
     val gameState by viewModel.gameState.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val transitionFloor by viewModel.transitionFloor.collectAsStateWithLifecycle()
+    val transitionTheme by viewModel.transitionTheme.collectAsStateWithLifecycle()
     val showInventory by viewModel.showInventory.collectAsStateWithLifecycle()
     val showPauseMenu by viewModel.showPauseMenu.collectAsStateWithLifecycle()
     val floatingTexts by viewModel.floatingTexts.collectAsStateWithLifecycle()
@@ -77,6 +87,7 @@ fun GameScreen(
         }
     )
     var showTutorial by remember { mutableStateOf(false) }
+    var inspectedEnemy by remember { mutableStateOf<Enemy?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(settings.tutorialSeen, gameState) {
@@ -101,7 +112,8 @@ fun GameScreen(
             .systemBarsPadding()
     ) {
         when {
-            isLoading || gameState == null -> {
+            isLoading && gameState == null -> {
+                // Initial load: show spinner
                 Column(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -116,7 +128,7 @@ fun GameScreen(
                 }
             }
 
-            else -> {
+            gameState != null -> {
                 val state = gameState!!
 
                 LaunchedEffect(state.status) {
@@ -149,6 +161,17 @@ fun GameScreen(
                     floatingTexts = floatingTexts,
                     playerFlashUntil = playerFlashUntil,
                     onTileTap = { viewModel.tapTile(it) },
+                    onTileLongPress = { pos ->
+                        val enemy = state.enemies.find {
+                            it.position == pos && it.isAlive &&
+                                    state.visibilityMap[pos] == Visibility.Visible
+                        }
+                        inspectedEnemy = enemy
+                    },
+                    onSwipeMove = { dx, dy ->
+                        val dir = Direction.entries.find { it.dx == dx && it.dy == dy }
+                        if (dir != null) viewModel.move(dir)
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
 
@@ -207,6 +230,11 @@ fun GameScreen(
                     Minimap(
                         state = state,
                         modifier = Modifier.padding(top = 8.dp)
+                    )
+
+                    QuestTracker(
+                        quests = state.quests,
+                        modifier = Modifier.padding(top = 6.dp)
                     )
                 }
 
@@ -285,6 +313,26 @@ fun GameScreen(
                                 ServiceLocator.settingsRepository.setTutorialSeen()
                             }
                         }
+                    )
+                }
+
+                // Enemy inspection popup
+                inspectedEnemy?.let { enemy ->
+                    EnemyInspectPopup(
+                        enemy = enemy,
+                        onDismiss = { inspectedEnemy = null }
+                    )
+                }
+
+                // Floor transition overlay (shown during floor descend)
+                AnimatedVisibility(
+                    visible = isLoading && gameState != null,
+                    enter = fadeIn(animationSpec = tween(300)),
+                    exit = fadeOut(animationSpec = tween(300))
+                ) {
+                    FloorTransitionOverlay(
+                        targetFloor = transitionFloor,
+                        theme = transitionTheme
                     )
                 }
             }

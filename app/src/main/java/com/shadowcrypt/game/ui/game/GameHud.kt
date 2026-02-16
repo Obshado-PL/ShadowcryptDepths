@@ -10,17 +10,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,9 +34,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.shadowcrypt.game.model.GameState
 import com.shadowcrypt.game.model.Position
+import com.shadowcrypt.game.model.Quest
+import com.shadowcrypt.game.model.QuestType
+import com.shadowcrypt.game.model.RoomType
 import com.shadowcrypt.game.model.Tile
 import com.shadowcrypt.game.model.Visibility
 import kotlin.math.min
+import com.shadowcrypt.game.ui.theme.DungeonAmber80
 import com.shadowcrypt.game.ui.theme.DungeonPurple80
 import com.shadowcrypt.game.ui.theme.EnemyColor
 import com.shadowcrypt.game.ui.theme.HealthRed
@@ -201,6 +209,18 @@ fun TopHud(
 
         // Floor progress column
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (state.isDaily) {
+                Text(
+                    text = "DAILY",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = DungeonAmber80,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(DungeonAmber80.copy(alpha = 0.2f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+                Spacer(Modifier.height(2.dp))
+            }
             Text(
                 text = "F${state.player.currentFloor}/10 ${state.dungeon.theme.displayName}",
                 style = MaterialTheme.typography.bodySmall,
@@ -262,6 +282,20 @@ fun Minimap(
 ) {
     val dungeon = state.dungeon
 
+    // Pre-compute room type lookup for special rooms
+    val roomTypeAt = remember(dungeon) {
+        HashMap<Long, RoomType>().also { map ->
+            for (room in dungeon.rooms) {
+                if (room.type == RoomType.Normal) continue
+                for (ry in room.y..room.bottom) {
+                    for (rx in room.x..room.right) {
+                        map[rx.toLong() shl 32 or ry.toLong().and(0xFFFFFFFFL)] = room.type
+                    }
+                }
+            }
+        }
+    }
+
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(6.dp))
@@ -281,7 +315,18 @@ fun Minimap(
                     val color = when {
                         tile == Tile.Wall -> Color(0xFF555555)
                         tile == Tile.StairsDown || tile == Tile.StairsUp -> StairsColor
-                        else -> Color(0xFF333333)
+                        else -> {
+                            val roomType = roomTypeAt[col.toLong() shl 32 or row.toLong().and(0xFFFFFFFFL)]
+                            when (roomType) {
+                                RoomType.TreasureVault -> Color(0xFF665500)
+                                RoomType.Arena -> Color(0xFF553333)
+                                RoomType.ShrineRoom -> Color(0xFF335555)
+                                RoomType.Library -> Color(0xFF333355)
+                                RoomType.Armory -> Color(0xFF554433)
+                                RoomType.TrapGauntlet -> Color(0xFF555533)
+                                else -> Color(0xFF333333)
+                            }
+                        }
                     }
                     val dimmed = if (vis == Visibility.Explored) 0.5f else 1f
 
@@ -317,5 +362,89 @@ fun Minimap(
                 size = Size(pxPerTile, pxPerTile)
             )
         }
+    }
+}
+
+@Composable
+fun QuestTracker(
+    quests: List<Quest>,
+    modifier: Modifier = Modifier
+) {
+    if (quests.isEmpty()) return
+
+    Column(
+        modifier = modifier
+            .widthIn(max = 160.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(HudBackground)
+            .padding(8.dp)
+    ) {
+        Text(
+            text = "QUESTS",
+            style = MaterialTheme.typography.labelSmall,
+            color = DungeonPurple80
+        )
+        Spacer(Modifier.height(4.dp))
+
+        for ((index, quest) in quests.withIndex()) {
+            QuestRow(quest)
+            if (index < quests.lastIndex) {
+                Spacer(Modifier.height(3.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuestRow(quest: Quest) {
+    val icon = when (quest.type) {
+        QuestType.KillEnemies -> "\u2694\uFE0F"
+        QuestType.KillBoss -> "\uD83D\uDC80"
+        QuestType.FindItem -> "\uD83D\uDCE6"
+        QuestType.ReachStairs -> "\u2B07\uFE0F"
+        QuestType.SurviveTurns -> "\u23F0"
+    }
+
+    val textColor = if (quest.completed) Color(0xFF66BB6A) else TextPrimary.copy(alpha = 0.8f)
+    val progressColor = if (quest.completed) Color(0xFF66BB6A) else DungeonPurple80
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = if (quest.completed) "\u2705" else icon,
+            style = MaterialTheme.typography.bodySmall
+        )
+        Spacer(Modifier.width(4.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = quest.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = textColor,
+                maxLines = 1
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(progressColor.copy(alpha = 0.2f))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(quest.progressFraction.coerceIn(0f, 1f))
+                        .clip(RoundedCornerShape(1.dp))
+                        .background(progressColor)
+                )
+            }
+        }
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text = "${quest.progress}/${quest.targetCount}",
+            style = MaterialTheme.typography.bodySmall,
+            color = textColor
+        )
     }
 }

@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.runtime.Composable
@@ -69,6 +70,8 @@ fun DungeonCanvas(
     floatingTexts: List<FloatingText> = emptyList(),
     playerFlashUntil: Long = 0L,
     onTileTap: (Position) -> Unit,
+    onTileLongPress: (Position) -> Unit = {},
+    onSwipeMove: (dx: Int, dy: Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     var scale by remember { mutableFloatStateOf(2.0f) }
@@ -117,21 +120,60 @@ fun DungeonCanvas(
                 }
             }
             .pointerInput(state.player.position) {
-                detectTapGestures { tapOffset ->
-                    val canvasCenterX = size.width / 2f
-                    val canvasCenterY = size.height / 2f
-                    val tileSize = baseTileSize * scale
+                detectTapGestures(
+                    onTap = { tapOffset ->
+                        val canvasCenterX = size.width / 2f
+                        val canvasCenterY = size.height / 2f
+                        val tileSize = baseTileSize * scale
 
-                    val playerScreenX = canvasCenterX + panOffset.x
-                    val playerScreenY = canvasCenterY + panOffset.y
+                        val playerScreenX = canvasCenterX + panOffset.x
+                        val playerScreenY = canvasCenterY + panOffset.y
 
-                    val gridX = state.player.position.x +
-                            ((tapOffset.x - playerScreenX) / tileSize).roundToInt()
-                    val gridY = state.player.position.y +
-                            ((tapOffset.y - playerScreenY) / tileSize).roundToInt()
+                        val gridX = state.player.position.x +
+                                ((tapOffset.x - playerScreenX) / tileSize).roundToInt()
+                        val gridY = state.player.position.y +
+                                ((tapOffset.y - playerScreenY) / tileSize).roundToInt()
 
-                    onTileTap(Position(gridX, gridY))
-                }
+                        onTileTap(Position(gridX, gridY))
+                    },
+                    onLongPress = { tapOffset ->
+                        val canvasCenterX = size.width / 2f
+                        val canvasCenterY = size.height / 2f
+                        val tileSize = baseTileSize * scale
+
+                        val playerScreenX = canvasCenterX + panOffset.x
+                        val playerScreenY = canvasCenterY + panOffset.y
+
+                        val gridX = state.player.position.x +
+                                ((tapOffset.x - playerScreenX) / tileSize).roundToInt()
+                        val gridY = state.player.position.y +
+                                ((tapOffset.y - playerScreenY) / tileSize).roundToInt()
+
+                        onTileLongPress(Position(gridX, gridY))
+                    }
+                )
+            }
+            .pointerInput(Unit) {
+                var totalDrag = Offset.Zero
+                detectDragGestures(
+                    onDragStart = { totalDrag = Offset.Zero },
+                    onDrag = { change, dragAmount ->
+                        totalDrag += dragAmount
+                        change.consume()
+                    },
+                    onDragEnd = {
+                        val minSwipeDist = baseTileSize * scale * 1.5f
+                        if (totalDrag.getDistance() > minSwipeDist) {
+                            val absX = kotlin.math.abs(totalDrag.x)
+                            val absY = kotlin.math.abs(totalDrag.y)
+                            if (absX > absY) {
+                                onSwipeMove(if (totalDrag.x > 0) 1 else -1, 0)
+                            } else {
+                                onSwipeMove(0, if (totalDrag.y > 0) 1 else -1)
+                            }
+                        }
+                    }
+                )
             }
     ) {
         val tileSize = baseTileSize * scale

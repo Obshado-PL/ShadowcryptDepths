@@ -91,6 +91,9 @@ fun AppNavigation() {
         ) {
             val context = LocalContext.current
             val hasSave = GameSaveManager.hasSave(context)
+            val dailyBest by ServiceLocator.metaProgressRepository.dailyBest.collectAsStateWithLifecycle(
+                initialValue = 0
+            )
             MainMenuScreen(
                 onNewRun = {
                     navController.navigate(ClassSelectRoute())
@@ -107,6 +110,7 @@ fun AppNavigation() {
                 onDailyChallenge = {
                     navController.navigate(ClassSelectRoute(isDaily = true))
                 },
+                dailyBestScore = dailyBest,
                 onSettings = {
                     navController.navigate(SettingsRoute)
                 },
@@ -144,7 +148,8 @@ fun AppNavigation() {
                             upgradeAtk = metaProgress.upgradeAtk,
                             upgradeDef = metaProgress.upgradeDef,
                             upgradeMag = metaProgress.upgradeMag,
-                            upgradeSpd = metaProgress.upgradeSpd
+                            upgradeSpd = metaProgress.upgradeSpd,
+                            isDaily = route.isDaily
                         )
                     ) {
                         popUpTo(MainMenuRoute)
@@ -182,16 +187,20 @@ fun AppNavigation() {
                 upgradeDef = route.upgradeDef,
                 upgradeMag = route.upgradeMag,
                 upgradeSpd = route.upgradeSpd,
+                isDaily = route.isDaily,
                 onGameOver = { floorReached, enemiesKilled, turnsTaken, won, lastMessages ->
                     GameSaveManager.deleteSave(context)
+                    val baseScore = floorReached * 100 + enemiesKilled * 10 + maxOf(0, 1000 - turnsTaken)
+                    val finalScore = if (route.isDaily) (baseScore * 1.5f).toInt() else baseScore
                     navController.navigate(
                         GameOverRoute(
                             floorReached = floorReached,
                             enemiesKilled = enemiesKilled,
                             turnsTaken = turnsTaken,
-                            score = floorReached * 100 + enemiesKilled * 10 + maxOf(0, 1000 - turnsTaken),
+                            score = finalScore,
                             won = won,
-                            lastMessages = lastMessages
+                            lastMessages = lastMessages,
+                            isDaily = route.isDaily
                         )
                     ) {
                         popUpTo(MainMenuRoute)
@@ -217,6 +226,7 @@ fun AppNavigation() {
                 score = route.score,
                 won = route.won,
                 lastMessages = route.lastMessages,
+                isDaily = route.isDaily,
                 onNewRun = {
                     navController.navigate(MainMenuRoute) {
                         popUpTo(MainMenuRoute) { inclusive = true }

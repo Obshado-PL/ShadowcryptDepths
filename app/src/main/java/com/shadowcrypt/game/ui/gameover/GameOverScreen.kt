@@ -44,6 +44,7 @@ fun GameOverScreen(
     score: Int,
     won: Boolean,
     lastMessages: String = "",
+    isDaily: Boolean = false,
     onNewRun: () -> Unit,
     onTryAgain: () -> Unit
 ) {
@@ -56,6 +57,9 @@ fun GameOverScreen(
             score = score,
             won = won
         )
+        if (isDaily) {
+            ServiceLocator.metaProgressRepository.recordDailyScore(score)
+        }
     }
 
     val titleColor = if (won) DungeonAmber80 else HealthRed
@@ -83,6 +87,15 @@ fun GameOverScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (isDaily) {
+                Text(
+                    text = "DAILY CHALLENGE",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = DungeonAmber80
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
             Text(
                 text = titleText,
                 style = MaterialTheme.typography.displayMedium,
@@ -137,6 +150,13 @@ fun GameOverScreen(
                         text = "$score",
                         style = MaterialTheme.typography.headlineMedium,
                         color = DungeonAmber80
+                    )
+                }
+                if (isDaily) {
+                    Text(
+                        text = "1.5x Daily Bonus Applied",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = DungeonAmber80.copy(alpha = 0.6f)
                     )
                 }
             }

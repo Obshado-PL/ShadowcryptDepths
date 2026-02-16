@@ -54,8 +54,9 @@ fun TutorialOverlay(
             Spacer(modifier = Modifier.height(4.dp))
 
             HintRow("D-PAD", "Move in 4 directions")
+            HintRow("SWIPE", "Swipe on the map to move")
             HintRow("TAP TILE", "Walk to that tile or attack adjacent enemies")
-            HintRow("TAP ENEMY", "Ranged classes can attack from distance")
+            HintRow("LONG-PRESS", "Hold on an enemy to see its stats")
             HintRow("CENTER BTN", "Descend stairs when standing on them")
             HintRow("BAG", "Open inventory to equip/use items")
             HintRow("AUTO-WALK", "Tap far away to walk automatically")
