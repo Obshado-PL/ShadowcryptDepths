@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 import com.shadowcrypt.game.ui.theme.GameBackground
 import com.shadowcrypt.game.ui.theme.HudBackground
 import com.shadowcrypt.game.ui.theme.TextPrimary
-import com.shadowcrypt.game.ui.theme.TextSecondary
+
 
 @Composable
 fun GameScreen(
@@ -185,7 +185,7 @@ fun GameScreen(
                             Text(
                                 text = "UNDO",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
+                                color = TextPrimary
                             )
                         }
                         Box(
@@ -199,7 +199,7 @@ fun GameScreen(
                             Text(
                                 text = "PAUSE",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
+                                color = TextPrimary
                             )
                         }
                     }

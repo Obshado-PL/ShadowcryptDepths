@@ -41,7 +41,7 @@ import com.shadowcrypt.game.ui.theme.HudBackground
 import com.shadowcrypt.game.ui.theme.PlayerColor
 import com.shadowcrypt.game.ui.theme.StairsColor
 import com.shadowcrypt.game.ui.theme.TextPrimary
-import com.shadowcrypt.game.ui.theme.TextSecondary
+
 import com.shadowcrypt.game.ui.theme.XpGold
 import com.shadowcrypt.game.ui.theme.XpGoldDark
 
@@ -226,7 +226,7 @@ fun TopHud(
         Text(
             text = "T:${state.turnCount}",
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary
+            color = TextPrimary.copy(alpha = 0.7f)
         )
     }
 }
@@ -248,7 +248,7 @@ fun MessageLog(
                 text = "> $msg",
                 style = MaterialTheme.typography.bodySmall,
                 color = if (index == displayMessages.lastIndex)
-                    TextPrimary else TextSecondary.copy(alpha = 0.6f),
+                    TextPrimary else TextPrimary.copy(alpha = 0.5f),
                 maxLines = 1
             )
         }

@@ -39,7 +39,7 @@ import com.shadowcrypt.game.ui.theme.DungeonPurple80
 import com.shadowcrypt.game.ui.theme.GameBackground
 import com.shadowcrypt.game.ui.theme.HudBackground
 import com.shadowcrypt.game.ui.theme.TextPrimary
-import com.shadowcrypt.game.ui.theme.TextSecondary
+
 import com.shadowcrypt.game.ui.theme.VoidAccent
 
 private data class AchievementDef(
@@ -98,7 +98,7 @@ fun UnlocksScreen(onBack: () -> Unit) {
                 Text(
                     text = "< BACK",
                     style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondary,
+                    color = TextPrimary,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .clickable { onBack() }
@@ -198,7 +198,7 @@ fun UnlocksScreen(onBack: () -> Unit) {
                     Text(
                         text = if (level >= 10) "MAX" else "Lv$level  [$cost gems]",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (canAfford) DungeonAmber80 else TextSecondary
+                        color = if (canAfford) DungeonAmber80 else TextPrimary.copy(alpha = 0.5f)
                     )
                 }
                 Spacer(modifier = Modifier.height(6.dp))
@@ -218,7 +218,7 @@ fun UnlocksScreen(onBack: () -> Unit) {
             Text(
                 text = "${progress.discoveredEnemies.size} / ${allEnemies.size} Discovered",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = TextPrimary.copy(alpha = 0.7f)
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -242,13 +242,13 @@ fun UnlocksScreen(onBack: () -> Unit) {
                         Text(
                             text = "HP:${enemy.baseHp} ATK:${enemy.baseAtk} DEF:${enemy.baseDef}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = TextPrimary.copy(alpha = 0.7f)
                         )
                     } else {
                         Text(
                             text = "???",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary.copy(alpha = 0.4f)
+                            color = TextPrimary.copy(alpha = 0.3f)
                         )
                     }
                 }
@@ -269,7 +269,7 @@ fun UnlocksScreen(onBack: () -> Unit) {
             Text(
                 text = "$unlockedCount / ${achievements.size} Unlocked",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = TextPrimary.copy(alpha = 0.7f)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -298,7 +298,7 @@ private fun StatRow(label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = TextPrimary.copy(alpha = 0.7f)
         )
         Text(
             text = value,
@@ -314,8 +314,8 @@ private fun AchievementCard(
     description: String,
     unlocked: Boolean
 ) {
-    val accentColor = if (unlocked) DungeonAmber80 else TextSecondary.copy(alpha = 0.4f)
-    val textColor = if (unlocked) TextPrimary else TextSecondary.copy(alpha = 0.5f)
+    val accentColor = if (unlocked) DungeonAmber80 else TextPrimary.copy(alpha = 0.3f)
+    val textColor = if (unlocked) TextPrimary else TextPrimary.copy(alpha = 0.4f)
 
     Row(
         modifier = Modifier

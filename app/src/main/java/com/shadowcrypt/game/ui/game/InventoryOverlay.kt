@@ -37,7 +37,7 @@ import com.shadowcrypt.game.ui.theme.RarityLegendary
 import com.shadowcrypt.game.ui.theme.RarityRare
 import com.shadowcrypt.game.ui.theme.RarityUncommon
 import com.shadowcrypt.game.ui.theme.TextPrimary
-import com.shadowcrypt.game.ui.theme.TextSecondary
+
 
 @Composable
 fun InventoryOverlay(
@@ -71,7 +71,7 @@ fun InventoryOverlay(
                     style = MaterialTheme.typography.titleLarge,
                     color = TextPrimary
                 )
-                ActionButton(text = "CLOSE", color = TextSecondary, onClick = onClose)
+                ActionButton(text = "CLOSE", color = TextPrimary, onClick = onClose)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -152,7 +152,7 @@ fun InventoryOverlay(
                 Text(
                     text = "No items.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = TextPrimary.copy(alpha = 0.5f)
                 )
             } else {
                 for (item in p.inventory.items) {
@@ -186,7 +186,7 @@ private fun EquipmentSlotRow(
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = TextPrimary.copy(alpha = 0.7f)
             )
             if (item != null) {
                 Text(
@@ -197,18 +197,18 @@ private fun EquipmentSlotRow(
                 Text(
                     text = itemStatSummary(item),
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = TextPrimary.copy(alpha = 0.7f)
                 )
             } else {
                 Text(
                     text = "--- empty ---",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary.copy(alpha = 0.5f)
+                    color = TextPrimary.copy(alpha = 0.4f)
                 )
             }
         }
         if (item != null) {
-            ActionButton(text = "Remove", color = TextSecondary, onClick = { onUnequip(slot) })
+            ActionButton(text = "Remove", color = TextPrimary, onClick = { onUnequip(slot) })
         }
     }
     Spacer(modifier = Modifier.height(4.dp))
@@ -244,7 +244,7 @@ private fun InventoryItemRow(
                     itemStatSummary(item)
                 },
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = TextPrimary.copy(alpha = 0.7f)
             )
 
             // Stat comparison vs equipped item
@@ -256,7 +256,7 @@ private fun InventoryItemRow(
                         Text(
                             text = "vs equipped: $comparison",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = TextPrimary.copy(alpha = 0.7f)
                         )
                     }
                 }
@@ -271,7 +271,7 @@ private fun InventoryItemRow(
                 ActionButton(text = "Use", color = DungeonPurple80, onClick = { onUse(item.id) })
                 Spacer(modifier = Modifier.width(4.dp))
             }
-            ActionButton(text = "Drop", color = TextSecondary, onClick = { onDrop(item.id) })
+            ActionButton(text = "Drop", color = TextPrimary.copy(alpha = 0.7f), onClick = { onDrop(item.id) })
         }
     }
 }
@@ -302,7 +302,7 @@ private fun StatText(label: String, base: Int, equipBonus: Int, buffBonus: Int) 
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary
+            color = TextPrimary.copy(alpha = 0.7f)
         )
         Text(
             text = "$base$bonusText",

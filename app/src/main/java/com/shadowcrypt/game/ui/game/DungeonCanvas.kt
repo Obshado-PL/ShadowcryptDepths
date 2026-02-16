@@ -30,6 +30,7 @@ import com.shadowcrypt.game.model.FloorTheme
 import com.shadowcrypt.game.model.GameState
 import com.shadowcrypt.game.model.Position
 import com.shadowcrypt.game.model.Rarity
+import com.shadowcrypt.game.model.RoomType
 import com.shadowcrypt.game.model.Tile
 import com.shadowcrypt.game.model.Visibility
 import com.shadowcrypt.game.ui.theme.CavernFloor
@@ -70,7 +71,7 @@ fun DungeonCanvas(
     onTileTap: (Position) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var scale by remember { mutableFloatStateOf(1.5f) }
+    var scale by remember { mutableFloatStateOf(2.0f) }
     var panOffset by remember { mutableStateOf(Offset.Zero) }
 
     val baseTileSize = 24f
@@ -138,13 +139,42 @@ fun DungeonCanvas(
         val canvasCenterY = size.height / 2f
         val currentTime = System.currentTimeMillis()
 
-        // Emoji rendering paint
+        // Emoji rendering paints
         val emojiPaint = Paint().apply {
             textSize = tileSize * 0.75f
             textAlign = Paint.Align.CENTER
             isAntiAlias = true
         }
         val emojiYOffset = -(emojiPaint.ascent() + emojiPaint.descent()) / 2f
+
+        // Smaller paint for wall texture and floor decorations
+        val wallPaint = Paint().apply {
+            textSize = tileSize * 0.55f
+            textAlign = Paint.Align.CENTER
+            isAntiAlias = true
+            alpha = 120 // semi-transparent for subtle texture
+        }
+        val wallYOffset = -(wallPaint.ascent() + wallPaint.descent()) / 2f
+
+        val decoPaint = Paint().apply {
+            textSize = tileSize * 0.45f
+            textAlign = Paint.Align.CENTER
+            isAntiAlias = true
+            alpha = 140 // subtle decorations
+        }
+        val decoYOffset = -(decoPaint.ascent() + decoPaint.descent()) / 2f
+
+        // Pre-compute wall emoji and room type lookup for this floor
+        val themedWallEmoji = wallEmoji(state.dungeon.theme)
+        val roomTypeAt = HashMap<Long, RoomType>(state.dungeon.rooms.sumOf { it.width * it.height })
+        for (room in state.dungeon.rooms) {
+            if (room.type == RoomType.Normal) continue
+            for (ry in room.y..room.bottom) {
+                for (rx in room.x..room.right) {
+                    roomTypeAt[rx.toLong() shl 32 or ry.toLong()] = room.type
+                }
+            }
+        }
 
         // Camera: player at canvas center (animated for smooth follow + shake)
         val shakeVal = shakeOffset.value
@@ -184,14 +214,40 @@ fun DungeonCanvas(
                         val tile = state.dungeon.grid[row][col]
                         val tileColor = getTileColor(tile, state.dungeon.theme, col, row)
                         drawRect(color = tileColor, topLeft = topLeft, size = tileSizeObj)
-                        tileEmoji(tile)?.let { emoji ->
+
+                        // Wall emoji texture
+                        if (tile == Tile.Wall) {
                             drawIntoCanvas { canvas ->
                                 canvas.nativeCanvas.drawText(
-                                    emoji,
+                                    themedWallEmoji,
                                     screenX + tileSize / 2f,
-                                    screenY + tileSize / 2f + emojiYOffset,
-                                    emojiPaint
+                                    screenY + tileSize / 2f + wallYOffset,
+                                    wallPaint
                                 )
+                            }
+                        } else if (tile == Tile.Floor) {
+                            // Floor decoration
+                            val roomType = roomTypeAt[col.toLong() shl 32 or row.toLong()] ?: RoomType.Normal
+                            floorDecoration(pos, roomType, state.dungeon.theme)?.let { deco ->
+                                drawIntoCanvas { canvas ->
+                                    canvas.nativeCanvas.drawText(
+                                        deco,
+                                        screenX + tileSize / 2f,
+                                        screenY + tileSize / 2f + decoYOffset,
+                                        decoPaint
+                                    )
+                                }
+                            }
+                        } else {
+                            tileEmoji(tile)?.let { emoji ->
+                                drawIntoCanvas { canvas ->
+                                    canvas.nativeCanvas.drawText(
+                                        emoji,
+                                        screenX + tileSize / 2f,
+                                        screenY + tileSize / 2f + emojiYOffset,
+                                        emojiPaint
+                                    )
+                                }
                             }
                         }
                         drawRect(color = FogExplored, topLeft = topLeft, size = tileSizeObj)
@@ -201,14 +257,40 @@ fun DungeonCanvas(
                         val tile = state.dungeon.grid[row][col]
                         val tileColor = getTileColor(tile, state.dungeon.theme, col, row)
                         drawRect(color = tileColor, topLeft = topLeft, size = tileSizeObj)
-                        tileEmoji(tile)?.let { emoji ->
+
+                        // Wall emoji texture
+                        if (tile == Tile.Wall) {
                             drawIntoCanvas { canvas ->
                                 canvas.nativeCanvas.drawText(
-                                    emoji,
+                                    themedWallEmoji,
                                     screenX + tileSize / 2f,
-                                    screenY + tileSize / 2f + emojiYOffset,
-                                    emojiPaint
+                                    screenY + tileSize / 2f + wallYOffset,
+                                    wallPaint
                                 )
+                            }
+                        } else if (tile == Tile.Floor) {
+                            // Floor decoration
+                            val roomType = roomTypeAt[col.toLong() shl 32 or row.toLong()] ?: RoomType.Normal
+                            floorDecoration(pos, roomType, state.dungeon.theme)?.let { deco ->
+                                drawIntoCanvas { canvas ->
+                                    canvas.nativeCanvas.drawText(
+                                        deco,
+                                        screenX + tileSize / 2f,
+                                        screenY + tileSize / 2f + decoYOffset,
+                                        decoPaint
+                                    )
+                                }
+                            }
+                        } else {
+                            tileEmoji(tile)?.let { emoji ->
+                                drawIntoCanvas { canvas ->
+                                    canvas.nativeCanvas.drawText(
+                                        emoji,
+                                        screenX + tileSize / 2f,
+                                        screenY + tileSize / 2f + emojiYOffset,
+                                        emojiPaint
+                                    )
+                                }
                             }
                         }
                     }
@@ -268,7 +350,13 @@ fun DungeonCanvas(
 
         // Draw enemies (with hit wobble)
         val hitWobbleDuration = 300L
-        val enemyInset = tileSize * 0.2f
+        val enemyInset = tileSize * 0.08f
+        val enemyEmojiPaint = Paint().apply {
+            textSize = tileSize * 0.85f
+            textAlign = Paint.Align.CENTER
+            isAntiAlias = true
+        }
+        val enemyEmojiYOffset = -(enemyEmojiPaint.ascent() + enemyEmojiPaint.descent()) / 2f
         for (enemy in state.enemies) {
             if (!enemy.isAlive) continue
             val vis = state.visibilityMap[enemy.position]
@@ -288,37 +376,51 @@ fun DungeonCanvas(
             val ex = cameraX + enemy.position.x * tileSize + wobbleX
             val ey = cameraY + enemy.position.y * tileSize
             val color = if (enemy.isBoss) BossColor else EnemyColor
+
+            // Colored background glow (slightly larger than tile for visibility)
+            val glowInset = -tileSize * 0.02f
+            drawRect(
+                color = color.copy(alpha = 0.3f),
+                topLeft = Offset(ex + glowInset, ey + glowInset),
+                size = Size(tileSize - glowInset * 2, tileSize - glowInset * 2)
+            )
+
+            // Enemy body
             drawRect(
                 color = color,
                 topLeft = Offset(ex + enemyInset, ey + enemyInset),
                 size = Size(tileSize - enemyInset * 2, tileSize - enemyInset * 2)
             )
 
-            // Enemy emoji
+            // Enemy emoji (larger, more visible)
             drawIntoCanvas { canvas ->
                 canvas.nativeCanvas.drawText(
                     enemyEmoji(enemy.typeId),
                     ex + tileSize / 2f,
-                    ey + tileSize / 2f + emojiYOffset,
-                    emojiPaint
+                    ey + tileSize / 2f + enemyEmojiYOffset,
+                    enemyEmojiPaint
                 )
             }
 
-            // Alert outline
+            // Outline — always visible (white default, special colors for alerted/boss/elite)
             val outlineColor = when {
                 enemy.isBoss -> BossColor
                 enemy.isElite -> Color(0xFFFF8C00) // orange for elites
                 enemy.alertedByPlayer -> Color.Yellow
-                else -> null
+                else -> Color.White.copy(alpha = 0.4f)
             }
-            if (outlineColor != null) {
-                drawRect(
-                    color = outlineColor,
-                    topLeft = Offset(ex + enemyInset, ey + enemyInset),
-                    size = Size(tileSize - enemyInset * 2, tileSize - enemyInset * 2),
-                    style = Stroke(width = 1f)
-                )
+            val outlineWidth = when {
+                enemy.isBoss -> 2.5f
+                enemy.isElite -> 2f
+                enemy.alertedByPlayer -> 1.5f
+                else -> 1f
             }
+            drawRect(
+                color = outlineColor,
+                topLeft = Offset(ex + enemyInset, ey + enemyInset),
+                size = Size(tileSize - enemyInset * 2, tileSize - enemyInset * 2),
+                style = Stroke(width = outlineWidth)
+            )
 
             // Intent indicator above enemy
             val intentEmoji = getEnemyIntent(enemy, state)
@@ -341,9 +443,9 @@ fun DungeonCanvas(
             // HP bar below enemy (only when damaged)
             if (enemy.hp < enemy.maxHp) {
                 val barWidth = tileSize - enemyInset * 2
-                val barHeight = tileSize * 0.08f
+                val barHeight = tileSize * 0.1f
                 val barX = ex + enemyInset
-                val barY = ey + tileSize - enemyInset + 1f
+                val barY = ey + tileSize - enemyInset + 2f
 
                 drawRect(
                     color = HealthRedDark,
@@ -361,23 +463,93 @@ fun DungeonCanvas(
         // Draw player (flash red when damaged)
         val playerScreenX = cameraX + state.player.position.x * tileSize
         val playerScreenY = cameraY + state.player.position.y * tileSize
-        val inset = tileSize * 0.15f
+        val playerInset = tileSize * 0.08f
         val playerDrawColor = if (currentTime < playerFlashUntil) HealthRed else PlayerColor
+
+        // Player glow
+        val playerGlowInset = -tileSize * 0.02f
         drawRect(
-            color = playerDrawColor,
-            topLeft = Offset(playerScreenX + inset, playerScreenY + inset),
-            size = Size(tileSize - inset * 2, tileSize - inset * 2)
+            color = playerDrawColor.copy(alpha = 0.3f),
+            topLeft = Offset(playerScreenX + playerGlowInset, playerScreenY + playerGlowInset),
+            size = Size(tileSize - playerGlowInset * 2, tileSize - playerGlowInset * 2)
         )
 
-        // Player emoji (skip during damage flash)
+        drawRect(
+            color = playerDrawColor,
+            topLeft = Offset(playerScreenX + playerInset, playerScreenY + playerInset),
+            size = Size(tileSize - playerInset * 2, tileSize - playerInset * 2)
+        )
+
+        // Player outline
+        drawRect(
+            color = Color.White.copy(alpha = 0.6f),
+            topLeft = Offset(playerScreenX + playerInset, playerScreenY + playerInset),
+            size = Size(tileSize - playerInset * 2, tileSize - playerInset * 2),
+            style = Stroke(width = 2f)
+        )
+
+        // Player emoji (larger, skip during damage flash)
         if (currentTime >= playerFlashUntil) {
+            val playerEmojiPaint = Paint().apply {
+                textSize = tileSize * 0.85f
+                textAlign = Paint.Align.CENTER
+                isAntiAlias = true
+            }
+            val playerEmojiYOff = -(playerEmojiPaint.ascent() + playerEmojiPaint.descent()) / 2f
             drawIntoCanvas { canvas ->
                 canvas.nativeCanvas.drawText(
                     playerEmoji(state.player.classId),
                     playerScreenX + tileSize / 2f,
-                    playerScreenY + tileSize / 2f + emojiYOffset,
-                    emojiPaint
+                    playerScreenY + tileSize / 2f + playerEmojiYOff,
+                    playerEmojiPaint
                 )
+            }
+        }
+
+        // Draw stairs direction indicator (arrow at screen edge when stairs not visible)
+        val stairsPos = state.dungeon.stairsDown
+        run {
+            val stairsScreenX = cameraX + stairsPos.x * tileSize + tileSize / 2
+            val stairsScreenY = cameraY + stairsPos.y * tileSize + tileSize / 2
+            val margin = tileSize * 1.5f
+
+            // Only show if stairs are off-screen
+            val offScreen = stairsScreenX < 0 || stairsScreenX > size.width ||
+                    stairsScreenY < 0 || stairsScreenY > size.height
+
+            if (offScreen) {
+                // Clamp to screen edge with margin
+                val clampedX = stairsScreenX.coerceIn(margin, size.width - margin)
+                val clampedY = stairsScreenY.coerceIn(margin, size.height - margin)
+
+                // Pulsing alpha
+                val pulse = 0.6f + 0.4f * kotlin.math.sin(
+                    (currentTime % 2000L) / 2000.0 * 2.0 * kotlin.math.PI
+                ).toFloat()
+
+                // Draw arrow background
+                drawCircle(
+                    color = StairsColor.copy(alpha = 0.3f * pulse),
+                    radius = tileSize * 0.6f,
+                    center = Offset(clampedX, clampedY)
+                )
+
+                // Draw stairs emoji at clamped position
+                val stairsPaint = Paint().apply {
+                    textSize = tileSize * 0.7f
+                    textAlign = Paint.Align.CENTER
+                    isAntiAlias = true
+                    alpha = (pulse * 255).toInt()
+                }
+                val stairsEmojiYOff = -(stairsPaint.ascent() + stairsPaint.descent()) / 2f
+                drawIntoCanvas { canvas ->
+                    canvas.nativeCanvas.drawText(
+                        "\u2B07\uFE0F",
+                        clampedX,
+                        clampedY + stairsEmojiYOff,
+                        stairsPaint
+                    )
+                }
             }
         }
 

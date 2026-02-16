@@ -39,7 +39,7 @@ import com.shadowcrypt.game.ui.theme.HealthRed
 import com.shadowcrypt.game.ui.theme.HudBackground
 import com.shadowcrypt.game.ui.theme.SewerAccent
 import com.shadowcrypt.game.ui.theme.TextPrimary
-import com.shadowcrypt.game.ui.theme.TextSecondary
+
 import com.shadowcrypt.game.ui.theme.VoidAccent
 
 private fun isClassUnlocked(classId: String, progress: MetaProgressRepository.MetaProgress): Boolean =
@@ -163,7 +163,7 @@ private fun ClassCard(
             Text(
                 text = charClass.description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = TextPrimary.copy(alpha = 0.7f)
             )
         } else {
             Text(
@@ -199,7 +199,7 @@ private fun StatColumn(
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary
+            color = TextPrimary.copy(alpha = 0.7f)
         )
         Text(
             text = "$value",

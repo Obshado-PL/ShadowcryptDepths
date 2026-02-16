@@ -22,7 +22,7 @@ import com.shadowcrypt.game.ui.theme.DungeonAmber80
 import com.shadowcrypt.game.ui.theme.DungeonPurple80
 import com.shadowcrypt.game.ui.theme.GameBackground
 import com.shadowcrypt.game.ui.theme.TextPrimary
-import com.shadowcrypt.game.ui.theme.TextSecondary
+
 
 @Composable
 fun TutorialOverlay(
@@ -83,7 +83,7 @@ private fun HintRow(label: String, description: String) {
         Text(
             text = description,
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary
+            color = TextPrimary.copy(alpha = 0.7f)
         )
     }
 }

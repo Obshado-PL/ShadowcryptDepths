@@ -1,10 +1,13 @@
 package com.shadowcrypt.game.ui.game
 
+import com.shadowcrypt.game.model.FloorTheme
 import com.shadowcrypt.game.model.ItemCategory
+import com.shadowcrypt.game.model.Position
 import com.shadowcrypt.game.model.RoomEventType
+import com.shadowcrypt.game.model.RoomType
 import com.shadowcrypt.game.model.Tile
 
-/** Returns emoji for a tile type, or null for Floor/Wall (keep rect only). */
+/** Returns emoji for a tile type, or null for Floor/Wall (handled separately). */
 fun tileEmoji(tile: Tile): String? = when (tile) {
     Tile.Floor -> null
     Tile.Wall -> null
@@ -15,6 +18,109 @@ fun tileEmoji(tile: Tile): String? = when (tile) {
     Tile.Water -> "\uD83C\uDF0A"           // 🌊
     Tile.Lava -> "\uD83D\uDD25"            // 🔥
     Tile.Pillar -> "\uD83E\uDDF1"          // 🧱
+}
+
+/** Returns emoji for wall tiles based on floor theme. */
+fun wallEmoji(theme: FloorTheme): String = when (theme) {
+    FloorTheme.Crypt -> "\uD83E\uDDF1"     // 🧱
+    FloorTheme.Sewers -> "\uD83D\uDFEB"    // 🟫
+    FloorTheme.Caverns -> "\uD83E\uDEA8"   // 🪨
+    FloorTheme.Inferno -> "\uD83D\uDFE5"   // 🟥
+    FloorTheme.Void -> "\uD83D\uDFEA"      // 🟪
+}
+
+/**
+ * Returns a decoration emoji for a floor tile, or null if no decoration.
+ * Uses position hash for deterministic sparse placement (~15% of tiles).
+ */
+fun floorDecoration(pos: Position, roomType: RoomType, theme: FloorTheme): String? {
+    // Deterministic hash to decide if this tile gets a decoration
+    val hash = (pos.x * 7919 + pos.y * 6271) and 0x7FFFFFFF
+    val chance = hash % 100
+
+    // Room type decorations (placed more densely ~20%)
+    if (roomType != RoomType.Normal) {
+        if (chance < 20) {
+            return roomTypeDecoration(roomType, hash)
+        }
+        return null
+    }
+
+    // Theme floor decorations (sparse ~12%)
+    if (chance < 12) {
+        return themeFloorDecoration(theme, hash)
+    }
+    return null
+}
+
+private fun roomTypeDecoration(type: RoomType, hash: Int): String = when (type) {
+    RoomType.TreasureVault -> when (hash % 4) {
+        0 -> "\uD83D\uDCB0"    // 💰
+        1 -> "\u2728"           // ✨
+        2 -> "\uD83D\uDC8E"    // 💎
+        else -> "\uD83E\uDE99" // 🪙
+    }
+    RoomType.Arena -> when (hash % 3) {
+        0 -> "\uD83D\uDDE1\uFE0F" // 🗡️
+        1 -> "\uD83D\uDEE1\uFE0F" // 🛡️
+        else -> "\uD83C\uDFF4"     // 🏴
+    }
+    RoomType.TrapGauntlet -> when (hash % 2) {
+        0 -> "\u2620\uFE0F"    // ☠️
+        else -> "\u26D4"        // ⛔
+    }
+    RoomType.ShrineRoom -> when (hash % 3) {
+        0 -> "\uD83D\uDD6F\uFE0F" // 🕯️
+        1 -> "\u2728"              // ✨
+        else -> "\uD83C\uDF1F"     // 🌟
+    }
+    RoomType.Library -> when (hash % 4) {
+        0 -> "\uD83D\uDCDA"    // 📚
+        1 -> "\uD83D\uDCDC"    // 📜
+        2 -> "\uD83D\uDCD6"    // 📖
+        else -> "\uD83D\uDD6F\uFE0F" // 🕯️
+    }
+    RoomType.Armory -> when (hash % 4) {
+        0 -> "\u2694\uFE0F"    // ⚔️
+        1 -> "\uD83D\uDEE1\uFE0F" // 🛡️
+        2 -> "\u2692\uFE0F"    // ⚒️
+        else -> "\uD83E\uDDF2" // 🧲
+    }
+    RoomType.Normal -> "\u00B7" // fallback (shouldn't reach here)
+}
+
+private fun themeFloorDecoration(theme: FloorTheme, hash: Int): String = when (theme) {
+    FloorTheme.Crypt -> when (hash % 5) {
+        0 -> "\uD83D\uDD6F\uFE0F" // 🕯️
+        1 -> "\uD83E\uDDB4"       // 🦴
+        2 -> "\uD83D\uDD78\uFE0F" // 🕸️
+        3 -> "\u26B0\uFE0F"       // ⚰️
+        else -> "\uD83E\uDEA6"    // 🪦
+    }
+    FloorTheme.Sewers -> when (hash % 4) {
+        0 -> "\uD83D\uDCA7"    // 💧
+        1 -> "\uD83E\uDDA0"    // 🦠
+        2 -> "\uD83C\uDF43"    // 🍃
+        else -> "\uD83E\uDEAB"  // 🪫 (dripping pipe)
+    }
+    FloorTheme.Caverns -> when (hash % 4) {
+        0 -> "\uD83E\uDEA8"    // 🪨
+        1 -> "\uD83D\uDC8E"    // 💎
+        2 -> "\uD83C\uDF44"    // 🍄
+        else -> "\u2B50"        // ⭐ (crystal sparkle)
+    }
+    FloorTheme.Inferno -> when (hash % 4) {
+        0 -> "\uD83D\uDD25"    // 🔥
+        1 -> "\uD83C\uDF2B\uFE0F" // 🌫️ (smoke)
+        2 -> "\u2668\uFE0F"    // ♨️
+        else -> "\uD83E\uDEA8" // 🪨 (charred rock)
+    }
+    FloorTheme.Void -> when (hash % 4) {
+        0 -> "\u2728"           // ✨
+        1 -> "\uD83C\uDF00"    // 🌀
+        2 -> "\uD83D\uDD73\uFE0F" // 🕳️
+        else -> "\u269B\uFE0F" // ⚛️
+    }
 }
 
 /** Returns emoji for the player based on class ID. */

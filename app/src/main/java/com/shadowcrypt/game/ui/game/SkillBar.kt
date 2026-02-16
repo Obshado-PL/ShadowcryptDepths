@@ -21,7 +21,7 @@ import com.shadowcrypt.game.model.Skills
 import com.shadowcrypt.game.ui.theme.DungeonAmber80
 import com.shadowcrypt.game.ui.theme.DungeonPurple80
 import com.shadowcrypt.game.ui.theme.HudBackground
-import com.shadowcrypt.game.ui.theme.TextSecondary
+
 
 @Composable
 fun SkillBar(

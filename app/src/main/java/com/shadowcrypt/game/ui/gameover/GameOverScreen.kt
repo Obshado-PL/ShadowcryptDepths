@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.shadowcrypt.game.ServiceLocator
 import com.shadowcrypt.game.ui.theme.DungeonAmber80
@@ -32,7 +33,7 @@ import com.shadowcrypt.game.ui.theme.GameBackground
 import com.shadowcrypt.game.ui.theme.HealthRed
 import com.shadowcrypt.game.ui.theme.HudBackground
 import com.shadowcrypt.game.ui.theme.TextPrimary
-import com.shadowcrypt.game.ui.theme.TextSecondary
+
 import com.shadowcrypt.game.ui.theme.VoidAccent
 
 @Composable
@@ -93,7 +94,7 @@ fun GameOverScreen(
             Text(
                 text = subtitleText,
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextSecondary
+                color = TextPrimary.copy(alpha = 0.7f)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -129,7 +130,7 @@ fun GameOverScreen(
                     Text(
                         text = "SCORE",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = TextSecondary
+                        color = TextPrimary.copy(alpha = 0.7f)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
@@ -161,7 +162,7 @@ fun GameOverScreen(
                             Text(
                                 text = "> $line",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
+                                color = TextPrimary.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -177,8 +178,8 @@ fun GameOverScreen(
                     .width(220.dp)
                     .height(52.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = DungeonPurple80.copy(alpha = 0.3f),
-                    contentColor = DungeonPurple80
+                    containerColor = DungeonPurple80.copy(alpha = 0.6f),
+                    contentColor = Color(0xFF1A0A30)
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -200,7 +201,7 @@ fun GameOverScreen(
                 Text(
                     text = "MAIN MENU",
                     style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondary
+                    color = TextPrimary
                 )
             }
         }
@@ -216,7 +217,7 @@ private fun StatRow(label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = TextPrimary.copy(alpha = 0.7f)
         )
         Text(
             text = value,

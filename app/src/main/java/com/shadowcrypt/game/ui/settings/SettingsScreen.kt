@@ -39,7 +39,7 @@ import com.shadowcrypt.game.ui.theme.DungeonPurple80
 import com.shadowcrypt.game.ui.theme.GameBackground
 import com.shadowcrypt.game.ui.theme.HudBackground
 import com.shadowcrypt.game.ui.theme.TextPrimary
-import com.shadowcrypt.game.ui.theme.TextSecondary
+
 import com.shadowcrypt.game.ui.theme.VoidAccent
 import kotlinx.coroutines.launch
 
@@ -81,7 +81,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Text(
                     text = "< BACK",
                     style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondary,
+                    color = TextPrimary,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .clickable { onBack() }
@@ -137,7 +137,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     Text(
                         text = "${(settings.soundVolume * 100).toInt()}%",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary,
+                        color = TextPrimary.copy(alpha = 0.7f),
                         modifier = Modifier.padding(start = 8.dp)
                     )
                 }
@@ -163,7 +163,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Text(
                     text = "Applies to new runs only",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = TextPrimary.copy(alpha = 0.6f)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -196,7 +196,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                             Text(
                                 text = diff.displayName.uppercase(),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (selected) DungeonPurple80 else TextSecondary
+                                color = if (selected) DungeonPurple80 else TextPrimary.copy(alpha = 0.7f)
                             )
                         }
                     }

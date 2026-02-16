@@ -31,7 +31,7 @@ import com.shadowcrypt.game.ui.theme.GameBackground
 import com.shadowcrypt.game.ui.theme.HealthRed
 import com.shadowcrypt.game.ui.theme.HudBackground
 import com.shadowcrypt.game.ui.theme.TextPrimary
-import com.shadowcrypt.game.ui.theme.TextSecondary
+
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -66,7 +66,7 @@ fun RunHistoryScreen(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("BACK", color = TextSecondary)
+                Text("BACK", color = TextPrimary)
             }
         }
 
@@ -93,7 +93,7 @@ fun RunHistoryScreen(
             Text(
                 text = "No runs recorded yet.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = TextPrimary.copy(alpha = 0.5f)
             )
         } else {
             for (run in progress.runHistory) {
@@ -131,7 +131,7 @@ private fun RunEntry(run: MetaProgressRepository.RunRecord) {
             Text(
                 text = dateStr,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = TextPrimary.copy(alpha = 0.6f)
             )
         }
         Column(horizontalAlignment = Alignment.End) {
@@ -143,7 +143,7 @@ private fun RunEntry(run: MetaProgressRepository.RunRecord) {
             Text(
                 text = "${run.enemiesKilled} kills, ${run.turnsTaken} turns",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = TextPrimary.copy(alpha = 0.6f)
             )
         }
     }
@@ -160,7 +160,7 @@ private fun StatColumn(label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary
+            color = TextPrimary.copy(alpha = 0.7f)
         )
     }
 }

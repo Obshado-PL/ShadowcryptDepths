@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.shadowcrypt.game.model.GameState
 import com.shadowcrypt.game.ui.theme.DungeonPurple80
@@ -33,7 +34,7 @@ import com.shadowcrypt.game.ui.theme.GameBackground
 import com.shadowcrypt.game.ui.theme.HealthRed
 import com.shadowcrypt.game.ui.theme.HudBackground
 import com.shadowcrypt.game.ui.theme.TextPrimary
-import com.shadowcrypt.game.ui.theme.TextSecondary
+
 
 @Composable
 fun PauseOverlay(
@@ -101,8 +102,8 @@ fun PauseOverlay(
                         .width(220.dp)
                         .height(52.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = DungeonPurple80.copy(alpha = 0.3f),
-                        contentColor = DungeonPurple80
+                        containerColor = DungeonPurple80.copy(alpha = 0.6f),
+                        contentColor = Color(0xFF1A0A30)
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -124,7 +125,7 @@ fun PauseOverlay(
                     Text(
                         text = "QUIT TO MENU",
                         style = MaterialTheme.typography.labelLarge,
-                        color = TextSecondary
+                        color = TextPrimary
                     )
                 }
             } else {
@@ -140,7 +141,7 @@ fun PauseOverlay(
                 Text(
                     text = "Your progress will be lost.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
+                    color = TextPrimary.copy(alpha = 0.7f)
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -151,8 +152,8 @@ fun PauseOverlay(
                         .width(220.dp)
                         .height(52.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = HealthRed.copy(alpha = 0.3f),
-                        contentColor = HealthRed
+                        containerColor = HealthRed.copy(alpha = 0.6f),
+                        contentColor = Color(0xFF1A0000)
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -174,7 +175,7 @@ fun PauseOverlay(
                     Text(
                         text = "CANCEL",
                         style = MaterialTheme.typography.labelLarge,
-                        color = TextSecondary
+                        color = TextPrimary
                     )
                 }
             }
@@ -191,7 +192,7 @@ private fun StatRow(label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = TextPrimary.copy(alpha = 0.7f)
         )
         Text(
             text = value,

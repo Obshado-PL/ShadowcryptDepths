@@ -30,7 +30,7 @@ import kotlin.random.Random
 
 class GameEngine(
     private val dungeonGenerator: DungeonGenerator = DungeonGenerator(),
-    private val fovEngine: FovEngine = FovEngine(viewRadius = 8)
+    private val fovEngine: FovEngine = FovEngine(viewRadius = 12)
 ) {
 
     fun newGame(
@@ -726,11 +726,11 @@ class GameEngine(
     }
 
     private fun getTorchViewRadius(torchFuel: Int): Int = when {
-        torchFuel > 60 -> 8
-        torchFuel > 30 -> 6
-        torchFuel > 10 -> 4
-        torchFuel > 0 -> 3
-        else -> 2
+        torchFuel > 60 -> 12
+        torchFuel > 30 -> 9
+        torchFuel > 10 -> 6
+        torchFuel > 0 -> 4
+        else -> 3
     }
 
     // ===== Room Events =====
