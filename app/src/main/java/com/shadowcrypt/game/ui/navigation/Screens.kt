@@ -36,7 +36,12 @@ data class GameRoute(
     val classId: String,
     val seed: Long = System.currentTimeMillis(),
     val loadSave: Boolean = false,
-    val difficulty: String = "Normal"
+    val difficulty: String = "Normal",
+    val upgradeHp: Int = 0,
+    val upgradeAtk: Int = 0,
+    val upgradeDef: Int = 0,
+    val upgradeMag: Int = 0,
+    val upgradeSpd: Int = 0
 )
 
 /**

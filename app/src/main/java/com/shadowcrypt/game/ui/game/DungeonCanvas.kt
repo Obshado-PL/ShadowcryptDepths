@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import com.shadowcrypt.game.model.AiBehavior
+import com.shadowcrypt.game.model.Enemy
 import com.shadowcrypt.game.model.FloorTheme
 import com.shadowcrypt.game.model.GameState
 import com.shadowcrypt.game.model.Position
@@ -305,6 +307,7 @@ fun DungeonCanvas(
             // Alert outline
             val outlineColor = when {
                 enemy.isBoss -> BossColor
+                enemy.isElite -> Color(0xFFFF8C00) // orange for elites
                 enemy.alertedByPlayer -> Color.Yellow
                 else -> null
             }
@@ -315,6 +318,24 @@ fun DungeonCanvas(
                     size = Size(tileSize - enemyInset * 2, tileSize - enemyInset * 2),
                     style = Stroke(width = 1f)
                 )
+            }
+
+            // Intent indicator above enemy
+            val intentEmoji = getEnemyIntent(enemy, state)
+            if (intentEmoji != null) {
+                val intentPaint = Paint().apply {
+                    textSize = tileSize * 0.4f
+                    textAlign = Paint.Align.CENTER
+                    isAntiAlias = true
+                }
+                drawIntoCanvas { canvas ->
+                    canvas.nativeCanvas.drawText(
+                        intentEmoji,
+                        ex + tileSize / 2f,
+                        ey - tileSize * 0.05f,
+                        intentPaint
+                    )
+                }
             }
 
             // HP bar below enemy (only when damaged)
@@ -432,6 +453,21 @@ private fun rarityColorForCanvas(rarity: Rarity): Color = when (rarity) {
     Rarity.Rare -> RarityRare
     Rarity.Epic -> RarityEpic
     Rarity.Legendary -> RarityLegendary
+}
+
+private fun getEnemyIntent(enemy: Enemy, state: GameState): String? {
+    if (enemy.isStunned) return "\u23F8" // pause symbol
+    val dist = enemy.position.distanceTo(state.player.position)
+    return when {
+        dist == 1 -> "\u2694" // swords (will attack)
+        enemy.alertedByPlayer && dist <= 3 -> when (enemy.behavior) {
+            AiBehavior.Ranged -> "\uD83C\uDFF9" // bow
+            AiBehavior.Support -> "\u2728" // sparkles (buff)
+            else -> "\u27A1" // arrow (approaching)
+        }
+        enemy.alertedByPlayer -> "\u2757" // alert
+        else -> null
+    }
 }
 
 private fun Color.lighten(amount: Float): Color = Color(

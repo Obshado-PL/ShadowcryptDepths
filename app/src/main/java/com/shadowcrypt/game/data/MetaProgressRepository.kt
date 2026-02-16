@@ -30,7 +30,15 @@ class MetaProgressRepository(private val context: Context) {
         val bestFloor: Int = 0,
         val victories: Int = 0,
         val unlockedAchievements: Set<String> = emptySet(),
-        val runHistory: List<RunRecord> = emptyList()
+        val runHistory: List<RunRecord> = emptyList(),
+        val soulGems: Int = 0,
+        val upgradeHp: Int = 0,
+        val upgradeAtk: Int = 0,
+        val upgradeDef: Int = 0,
+        val upgradeMag: Int = 0,
+        val upgradeSpd: Int = 0,
+        val unlockedClasses: Set<String> = setOf("warrior"),
+        val discoveredEnemies: Set<String> = emptySet()
     )
 
     private companion object {
@@ -42,6 +50,14 @@ class MetaProgressRepository(private val context: Context) {
         val VICTORIES = intPreferencesKey("victories")
         val ACHIEVEMENTS = stringSetPreferencesKey("achievements")
         val RUN_HISTORY = stringSetPreferencesKey("run_history")
+        val SOUL_GEMS = intPreferencesKey("soul_gems")
+        val UPGRADE_HP = intPreferencesKey("upgrade_hp")
+        val UPGRADE_ATK = intPreferencesKey("upgrade_atk")
+        val UPGRADE_DEF = intPreferencesKey("upgrade_def")
+        val UPGRADE_MAG = intPreferencesKey("upgrade_mag")
+        val UPGRADE_SPD = intPreferencesKey("upgrade_spd")
+        val UNLOCKED_CLASSES = stringSetPreferencesKey("unlocked_classes")
+        val DISCOVERED_ENEMIES = stringSetPreferencesKey("discovered_enemies")
     }
 
     val progress: Flow<MetaProgress> = context.dataStore.data.map { prefs ->
@@ -53,7 +69,15 @@ class MetaProgressRepository(private val context: Context) {
             bestFloor = prefs[BEST_FLOOR] ?: 0,
             victories = prefs[VICTORIES] ?: 0,
             unlockedAchievements = prefs[ACHIEVEMENTS] ?: emptySet(),
-            runHistory = parseRunHistory(prefs[RUN_HISTORY] ?: emptySet())
+            runHistory = parseRunHistory(prefs[RUN_HISTORY] ?: emptySet()),
+            soulGems = prefs[SOUL_GEMS] ?: 0,
+            upgradeHp = prefs[UPGRADE_HP] ?: 0,
+            upgradeAtk = prefs[UPGRADE_ATK] ?: 0,
+            upgradeDef = prefs[UPGRADE_DEF] ?: 0,
+            upgradeMag = prefs[UPGRADE_MAG] ?: 0,
+            upgradeSpd = prefs[UPGRADE_SPD] ?: 0,
+            unlockedClasses = prefs[UNLOCKED_CLASSES] ?: setOf("warrior"),
+            discoveredEnemies = prefs[DISCOVERED_ENEMIES] ?: emptySet()
         )
     }
 
@@ -71,6 +95,20 @@ class MetaProgressRepository(private val context: Context) {
                 prefs[VICTORIES] = (prefs[VICTORIES] ?: 0) + 1
             }
 
+            // Award soul gems: 5 per floor + 2 per kill + 50 for victory
+            val gems = floorReached * 5 + enemiesKilled * 2 + if (won) 50 else 0
+            prefs[SOUL_GEMS] = (prefs[SOUL_GEMS] ?: 0) + gems
+
+            // Auto-unlock classes based on progress
+            val classes = (prefs[UNLOCKED_CLASSES] ?: setOf("warrior")).toMutableSet()
+            val totalRuns = prefs[TOTAL_RUNS] ?: 0
+            val bestFloor = prefs[BEST_FLOOR] ?: 0
+            val victories = prefs[VICTORIES] ?: 0
+            if (totalRuns >= 1) classes.add("rogue")       // Unlock rogue after 1 run
+            if (bestFloor >= 3) classes.add("mage")         // Unlock mage after reaching floor 3
+            if (bestFloor >= 5) classes.add("cleric")       // Unlock cleric after reaching floor 5
+            prefs[UNLOCKED_CLASSES] = classes
+
             // Save run to history (keep last 20)
             val history = (prefs[RUN_HISTORY] ?: emptySet()).toMutableSet()
             val entry = "${System.currentTimeMillis()}|$floorReached|$enemiesKilled|$turnsTaken|$score|$won"
@@ -86,19 +124,50 @@ class MetaProgressRepository(private val context: Context) {
 
             // Check and unlock achievements
             val current = prefs[ACHIEVEMENTS]?.toMutableSet() ?: mutableSetOf()
-            val totalKills = prefs[TOTAL_KILLS] ?: 0
-            val bestFloor = prefs[BEST_FLOOR] ?: 0
-            val totalRuns = prefs[TOTAL_RUNS] ?: 0
-            val victories = prefs[VICTORIES] ?: 0
+            val aTotalKills = prefs[TOTAL_KILLS] ?: 0
 
-            if (totalKills >= 1) current.add("first_blood")
+            if (aTotalKills >= 1) current.add("first_blood")
             if (bestFloor >= 5) current.add("floor_5")
             if (bestFloor >= 10) current.add("floor_10")
-            if (totalKills >= 100) current.add("slayer_100")
+            if (aTotalKills >= 100) current.add("slayer_100")
             if (victories >= 1) current.add("first_victory")
             if (totalRuns >= 10) current.add("runs_10")
 
             prefs[ACHIEVEMENTS] = current
+        }
+    }
+
+    fun upgradeCost(level: Int): Int = 10 + level * 15
+
+    suspend fun purchaseUpgrade(stat: String): Boolean {
+        var success = false
+        context.dataStore.edit { prefs ->
+            val gems = prefs[SOUL_GEMS] ?: 0
+            val key = when (stat) {
+                "hp" -> UPGRADE_HP
+                "atk" -> UPGRADE_ATK
+                "def" -> UPGRADE_DEF
+                "mag" -> UPGRADE_MAG
+                "spd" -> UPGRADE_SPD
+                else -> return@edit
+            }
+            val level = prefs[key] ?: 0
+            val cost = upgradeCost(level)
+            if (gems >= cost && level < 10) {
+                prefs[SOUL_GEMS] = gems - cost
+                prefs[key] = level + 1
+                success = true
+            }
+        }
+        return success
+    }
+
+    suspend fun discoverEnemies(enemyTypeIds: Set<String>) {
+        if (enemyTypeIds.isEmpty()) return
+        context.dataStore.edit { prefs ->
+            val current = (prefs[DISCOVERED_ENEMIES] ?: emptySet()).toMutableSet()
+            current.addAll(enemyTypeIds)
+            prefs[DISCOVERED_ENEMIES] = current
         }
     }
 

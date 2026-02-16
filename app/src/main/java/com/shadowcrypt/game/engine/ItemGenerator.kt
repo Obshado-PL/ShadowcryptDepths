@@ -80,14 +80,18 @@ object ItemGenerator {
     }
 
     fun rollEnemyDrop(enemy: Enemy, floor: Int, random: Random, difficulty: Difficulty = Difficulty.Normal): Item? {
-        val baseChance = if (enemy.isBoss) 100 else 25
+        val baseChance = when {
+            enemy.isBoss -> 100
+            enemy.isElite -> 80
+            else -> 25
+        }
         val dropChance = (baseChance * difficulty.dropRateMultiplier).toInt().coerceIn(5, 100)
         if (random.nextInt(100) >= dropChance) return null
 
-        val rarity = if (enemy.isBoss) {
-            rollRarity(floor, random, minRarity = Rarity.Rare)
-        } else {
-            rollRarity(floor, random)
+        val rarity = when {
+            enemy.isBoss -> rollRarity(floor, random, minRarity = Rarity.Rare)
+            enemy.isElite -> rollRarity(floor, random, minRarity = Rarity.Uncommon)
+            else -> rollRarity(floor, random)
         }
 
         val templates = ItemTemplates.forFloor(floor)
@@ -131,6 +135,8 @@ object ItemGenerator {
             is ItemEffect.RevealMap -> effect
             is ItemEffect.FreezeEnemies -> effect
             is ItemEffect.CureStatus -> effect
+            is ItemEffect.RestoreHunger -> ItemEffect.RestoreHunger((effect.amount * mult).toInt())
+            is ItemEffect.RestoreTorch -> ItemEffect.RestoreTorch((effect.amount * mult).toInt())
             null -> null
         }
     }

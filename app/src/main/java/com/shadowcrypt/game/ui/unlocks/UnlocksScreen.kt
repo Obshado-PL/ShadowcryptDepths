@@ -1,6 +1,7 @@
 package com.shadowcrypt.game.ui.unlocks
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shadowcrypt.game.ServiceLocator
 import com.shadowcrypt.game.data.MetaProgressRepository
+import com.shadowcrypt.game.model.EnemyTypes
+import kotlinx.coroutines.launch
 import com.shadowcrypt.game.ui.theme.DungeonAmber80
 import com.shadowcrypt.game.ui.theme.DungeonPurple80
 import com.shadowcrypt.game.ui.theme.GameBackground
@@ -53,11 +57,15 @@ private val achievements = listOf(
     AchievementDef("runs_10", "Veteran", "Complete 10 runs")
 )
 
+private data class UpgradeDef(val stat: String, val label: String, val icon: String)
+
 @Composable
 fun UnlocksScreen(onBack: () -> Unit) {
     val progress by ServiceLocator.metaProgressRepository.progress.collectAsStateWithLifecycle(
         initialValue = MetaProgressRepository.MetaProgress()
     )
+    val scope = rememberCoroutineScope()
+    val repo = ServiceLocator.metaProgressRepository
 
     Box(
         modifier = Modifier
@@ -136,6 +144,115 @@ fun UnlocksScreen(onBack: () -> Unit) {
                 StatRow("High Score", "${progress.highScore}")
                 Spacer(modifier = Modifier.height(8.dp))
                 StatRow("Victories", "${progress.victories}")
+                Spacer(modifier = Modifier.height(8.dp))
+                StatRow("Soul Gems", "${progress.soulGems}")
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Permanent Upgrades
+            Text(
+                text = "PERMANENT UPGRADES",
+                style = MaterialTheme.typography.labelLarge,
+                color = DungeonAmber80
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            val upgrades = listOf(
+                UpgradeDef("hp", "HP +5", "HP"),
+                UpgradeDef("atk", "ATK +1", "ATK"),
+                UpgradeDef("def", "DEF +1", "DEF"),
+                UpgradeDef("mag", "MAG +1", "MAG"),
+                UpgradeDef("spd", "SPD +1", "SPD")
+            )
+            for (upgrade in upgrades) {
+                val level = when (upgrade.stat) {
+                    "hp" -> progress.upgradeHp
+                    "atk" -> progress.upgradeAtk
+                    "def" -> progress.upgradeDef
+                    "mag" -> progress.upgradeMag
+                    "spd" -> progress.upgradeSpd
+                    else -> 0
+                }
+                val cost = repo.upgradeCost(level)
+                val canAfford = progress.soulGems >= cost && level < 10
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(HudBackground)
+                        .then(
+                            if (canAfford) Modifier.clickable {
+                                scope.launch { repo.purchaseUpgrade(upgrade.stat) }
+                            } else Modifier
+                        )
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "${upgrade.icon} ${upgrade.label}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = if (level >= 10) "MAX" else "Lv$level  [$cost gems]",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (canAfford) DungeonAmber80 else TextSecondary
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Bestiary
+            Text(
+                text = "BESTIARY",
+                style = MaterialTheme.typography.labelLarge,
+                color = DungeonAmber80
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            val allEnemies = EnemyTypes.all
+            Text(
+                text = "${progress.discoveredEnemies.size} / ${allEnemies.size} Discovered",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            for (enemy in allEnemies) {
+                val discovered = enemy.id in progress.discoveredEnemies
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(HudBackground)
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (discovered) {
+                        Text(
+                            text = enemy.displayName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextPrimary,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "HP:${enemy.baseHp} ATK:${enemy.baseAtk} DEF:${enemy.baseDef}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    } else {
+                        Text(
+                            text = "???",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary.copy(alpha = 0.4f)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
             Spacer(modifier = Modifier.height(24.dp))

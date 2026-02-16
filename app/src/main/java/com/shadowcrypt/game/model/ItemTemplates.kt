@@ -237,6 +237,34 @@ object ItemTemplates {
         minFloor = 2, maxFloor = 10, dropWeight = 8,
         description = "Cures all status effects."
     )
+    val Rations = ItemTemplate(
+        id = "rations", displayName = "Rations",
+        category = ItemCategory.Consumable,
+        effect = ItemEffect.RestoreHunger(40),
+        minFloor = 1, maxFloor = 10, dropWeight = 15,
+        description = "Restores 40 hunger."
+    )
+    val FeastPlatter = ItemTemplate(
+        id = "feast_platter", displayName = "Feast Platter",
+        category = ItemCategory.Consumable,
+        effect = ItemEffect.RestoreHunger(80),
+        minFloor = 4, maxFloor = 10, dropWeight = 6,
+        description = "Restores 80 hunger."
+    )
+    val Torch = ItemTemplate(
+        id = "torch", displayName = "Torch",
+        category = ItemCategory.Consumable,
+        effect = ItemEffect.RestoreTorch(50),
+        minFloor = 1, maxFloor = 10, dropWeight = 12,
+        description = "Restores 50 torch fuel."
+    )
+    val EverbrightLantern = ItemTemplate(
+        id = "everbright_lantern", displayName = "Everbright Lantern",
+        category = ItemCategory.Consumable,
+        effect = ItemEffect.RestoreTorch(100),
+        minFloor = 5, maxFloor = 10, dropWeight = 5,
+        description = "Fully restores torch fuel."
+    )
 
     // ===== Lookups =====
 
@@ -253,7 +281,8 @@ object ItemTemplates {
         HealthPotion, GreaterHealthPotion,
         StrengthPotion, IronSkinPotion,
         SpeedScroll, ArcaneTome,
-        TeleportScroll, MapScroll, FreezeScroll, Antidote
+        TeleportScroll, MapScroll, FreezeScroll, Antidote,
+        Rations, FeastPlatter, Torch, EverbrightLantern
     )
 
     val all: List<ItemTemplate> = allEquipment + allConsumables

@@ -16,7 +16,12 @@ data class Player(
     val currentFloor: Int = 1,
     val inventory: Inventory = Inventory(),
     val equipment: Equipment = Equipment(),
-    val activeBuffs: List<ActiveBuff> = emptyList()
+    val activeBuffs: List<ActiveBuff> = emptyList(),
+    val skillCooldowns: Map<String, Int> = emptyMap(),
+    val torchFuel: Int = 100,
+    val maxTorchFuel: Int = 100,
+    val hunger: Int = 100,
+    val maxHunger: Int = 100
 ) {
     val isAlive: Boolean get() = hp > 0
     val hpFraction: Float get() = hp.toFloat() / effectiveMaxHp.toFloat()
@@ -39,5 +44,22 @@ data class Player(
             mag = characterClass.baseMag,
             spd = characterClass.baseSpd
         )
+
+        fun create(
+            characterClass: CharacterClass,
+            hpBonus: Int, atkBonus: Int, defBonus: Int, magBonus: Int, spdBonus: Int
+        ): Player {
+            val hp = characterClass.baseHp + hpBonus * 5
+            return Player(
+                position = Position(0, 0),
+                classId = characterClass.id,
+                hp = hp,
+                maxHp = hp,
+                atk = characterClass.baseAtk + atkBonus,
+                def = characterClass.baseDef + defBonus,
+                mag = characterClass.baseMag + magBonus,
+                spd = characterClass.baseSpd + spdBonus
+            )
+        }
     }
 }

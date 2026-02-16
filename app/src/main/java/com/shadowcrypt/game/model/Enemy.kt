@@ -25,7 +25,8 @@ data class Enemy(
     val displayName: String,
     val isBoss: Boolean = false,
     val bossPhase: Int = 1,
-    val activeBuffs: List<ActiveBuff> = emptyList()
+    val activeBuffs: List<ActiveBuff> = emptyList(),
+    val isElite: Boolean = false
 ) {
     val isAlive: Boolean get() = hp > 0
     val hpFraction: Float get() = hp.toFloat() / maxHp.toFloat()

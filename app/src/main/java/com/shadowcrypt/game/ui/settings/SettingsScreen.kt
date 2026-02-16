@@ -203,6 +203,39 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Accessibility section
+            SectionContainer(title = "ACCESSIBILITY") {
+                Text(
+                    text = "Font Scale: ${String.format("%.1f", settings.fontScale)}x",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextPrimary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Slider(
+                    value = settings.fontScale,
+                    onValueChange = {
+                        scope.launch { ServiceLocator.settingsRepository.setFontScale(it) }
+                    },
+                    valueRange = 0.8f..1.5f,
+                    steps = 6,
+                    colors = SliderDefaults.colors(
+                        thumbColor = DungeonPurple80,
+                        activeTrackColor = DungeonPurple80,
+                        inactiveTrackColor = HudBackground
+                    )
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                ToggleRow(
+                    label = "High Contrast Mode",
+                    checked = settings.highContrastMode,
+                    onCheckedChange = {
+                        scope.launch { ServiceLocator.settingsRepository.setHighContrast(it) }
+                    }
+                )
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }

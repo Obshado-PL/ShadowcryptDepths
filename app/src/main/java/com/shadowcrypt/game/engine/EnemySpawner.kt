@@ -66,6 +66,8 @@ object EnemySpawner {
         return enemies
     }
 
+    private val elitePrefixes = listOf("Enraged", "Armored", "Venomous", "Swift", "Cursed")
+
     private fun createEnemy(
         id: Int,
         type: EnemyType,
@@ -77,21 +79,31 @@ object EnemySpawner {
         val floorsAboveMin = (floorNumber - type.minFloor).coerceAtLeast(0)
         val scale = (1.0f + floorsAboveMin * 0.10f) * difficulty.enemyStatScale
 
-        val scaledHp = (type.baseHp * scale).toInt()
+        // Elite chance: 10% on floors 3+, scaling with difficulty
+        val eliteChance = if (floorNumber >= 3 && !type.isBoss) {
+            (10 * difficulty.enemyStatScale).toInt()
+        } else 0
+        val isElite = random.nextInt(100) < eliteChance
+
+        val eliteScale = if (isElite) 1.4f else 1.0f
+        val prefix = if (isElite) elitePrefixes[random.nextInt(elitePrefixes.size)] else null
+
+        val scaledHp = (type.baseHp * scale * eliteScale).toInt()
         return Enemy(
             id = id,
             typeId = type.id,
             position = position,
             hp = scaledHp,
             maxHp = scaledHp,
-            atk = (type.baseAtk * scale).toInt(),
-            def = (type.baseDef * scale).toInt(),
-            mag = (type.baseMag * scale).toInt(),
-            spd = type.baseSpd,
-            xpReward = (type.baseXpReward * scale).toInt(),
+            atk = (type.baseAtk * scale * eliteScale).toInt(),
+            def = (type.baseDef * scale * eliteScale).toInt(),
+            mag = (type.baseMag * scale * eliteScale).toInt(),
+            spd = type.baseSpd + if (isElite && prefix == "Swift") 3 else 0,
+            xpReward = (type.baseXpReward * scale * eliteScale * 1.5f).toInt(),
             behavior = type.behavior,
-            displayName = type.displayName,
-            isBoss = type.isBoss
+            displayName = if (prefix != null) "$prefix ${type.displayName}" else type.displayName,
+            isBoss = type.isBoss,
+            isElite = isElite
         )
     }
 

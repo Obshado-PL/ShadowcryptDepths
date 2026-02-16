@@ -114,6 +114,66 @@ fun TopHud(
                 )
             }
 
+            // Torch & Hunger indicators
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Torch bar
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val torchFraction = state.player.torchFuel.toFloat() / state.player.maxTorchFuel
+                    val torchColor = when {
+                        torchFraction > 0.5f -> Color(0xFFFFAA00)
+                        torchFraction > 0.2f -> Color(0xFFFF7700)
+                        else -> Color(0xFFFF3300)
+                    }
+                    Text(
+                        text = "\uD83D\uDD25",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(50.dp)
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color(0xFF333333))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(torchFraction)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(torchColor)
+                        )
+                    }
+                }
+                // Hunger bar
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val hungerFraction = state.player.hunger.toFloat() / state.player.maxHunger
+                    val hungerColor = when {
+                        hungerFraction > 0.5f -> Color(0xFF66BB6A)
+                        hungerFraction > 0.2f -> Color(0xFFFF9800)
+                        else -> Color(0xFFFF3300)
+                    }
+                    Text(
+                        text = "\uD83C\uDF56",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(50.dp)
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color(0xFF333333))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(hungerFraction)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(hungerColor)
+                        )
+                    }
+                }
+            }
+
             // Active buff pills
             if (state.player.activeBuffs.isNotEmpty()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {

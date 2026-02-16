@@ -69,7 +69,15 @@ object EnemyTypes {
         minFloor = 3, maxFloor = 4, spawnWeight = 12
     )
 
-    // ===== Floor 5 Mini-Boss =====
+    // ===== Floor 3 Mini-Boss =====
+    val CryptGuardian = EnemyType(
+        id = "crypt_guardian", displayName = "Crypt Guardian",
+        baseHp = 50, baseAtk = 9, baseDef = 6, baseMag = 3, baseSpd = 5,
+        baseXpReward = 35, behavior = AiBehavior.Boss,
+        minFloor = 3, maxFloor = 3, isBoss = true, spawnWeight = 0
+    )
+
+    // ===== Floor 5 Boss =====
     val BoneWarden = EnemyType(
         id = "bone_warden", displayName = "Bone Warden",
         baseHp = 80, baseAtk = 12, baseDef = 8, baseMag = 4, baseSpd = 6,
@@ -129,6 +137,14 @@ object EnemyTypes {
         minFloor = 7, maxFloor = 9, spawnWeight = 6
     )
 
+    // ===== Floor 7 Mini-Boss =====
+    val InfernalChampion = EnemyType(
+        id = "infernal_champion", displayName = "Infernal Champion",
+        baseHp = 100, baseAtk = 14, baseDef = 9, baseMag = 8, baseSpd = 7,
+        baseXpReward = 80, behavior = AiBehavior.Boss,
+        minFloor = 7, maxFloor = 7, isBoss = true, spawnWeight = 0
+    )
+
     // ===== Void (Floors 9-10) =====
     val VoidWraith = EnemyType(
         id = "void_wraith", displayName = "Void Wraith",
@@ -165,9 +181,11 @@ object EnemyTypes {
 
     val all: List<EnemyType> = listOf(
         Skeleton, Zombie, GhostlyWisp, CryptBat,
+        CryptGuardian,
         RatSwarm, SewerSlime, ToxicToad, PlagueRat,
         BoneWarden,
         CaveSpider, StoneGolem, CrystalSentinel, Troglodyte,
+        InfernalChampion,
         FireImp, LavaElemental, HellHound, InfernalPriest,
         VoidWraith, PhaseShifter, EntropyStalker, AbyssalEye,
         ShadowcryptLord
@@ -177,7 +195,9 @@ object EnemyTypes {
         all.filter { !it.isBoss && floor in it.minFloor..it.maxFloor }
 
     fun bossForFloor(floor: Int): EnemyType? = when (floor) {
+        3 -> CryptGuardian
         5 -> BoneWarden
+        7 -> InfernalChampion
         10 -> ShadowcryptLord
         else -> null
     }

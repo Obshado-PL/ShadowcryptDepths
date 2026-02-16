@@ -13,5 +13,7 @@ enum class GameEvent {
     FloorDescend,
     PlayerDeath,
     Victory,
-    TrapTriggered
+    TrapTriggered,
+    SkillUse,
+    QuestComplete
 }

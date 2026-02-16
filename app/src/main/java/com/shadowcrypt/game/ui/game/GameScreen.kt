@@ -3,8 +3,10 @@ package com.shadowcrypt.game.ui.game
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -44,6 +46,11 @@ fun GameScreen(
     seed: Long,
     loadSave: Boolean = false,
     difficultyName: String = "Normal",
+    upgradeHp: Int = 0,
+    upgradeAtk: Int = 0,
+    upgradeDef: Int = 0,
+    upgradeMag: Int = 0,
+    upgradeSpd: Int = 0,
     onGameOver: (floorReached: Int, enemiesKilled: Int, turnsTaken: Int, won: Boolean, lastMessages: String) -> Unit,
     viewModel: GameViewModel = viewModel()
 ) {
@@ -53,7 +60,7 @@ fun GameScreen(
             viewModel.loadSavedGame(context)
         } else {
             val diff = Difficulty.entries.find { it.name == difficultyName } ?: Difficulty.Normal
-            viewModel.initGame(classId, seed, diff)
+            viewModel.initGame(classId, seed, diff, upgradeHp, upgradeAtk, upgradeDef, upgradeMag, upgradeSpd)
         }
     }
 
@@ -159,26 +166,42 @@ fun GameScreen(
                         .padding(bottom = 180.dp)
                 )
 
-                // Top-right column: Pause button + Minimap
+                // Top-right column: Pause + Undo buttons + Minimap
                 Column(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(top = 8.dp, end = 16.dp),
                     horizontalAlignment = Alignment.End
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(HudBackground)
-                            .clickable { viewModel.togglePause() }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "PAUSE",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(HudBackground)
+                                .clickable { viewModel.undoLastMove() }
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "UNDO",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(HudBackground)
+                                .clickable { viewModel.togglePause() }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "PAUSE",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
                     }
 
                     Minimap(
@@ -204,6 +227,16 @@ fun GameScreen(
                         color = TextPrimary
                     )
                 }
+
+                // Skill bar (left of D-pad)
+                SkillBar(
+                    classId = state.player.classId,
+                    cooldowns = state.player.skillCooldowns,
+                    onSkill = { viewModel.useSkill(it) },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 200.dp, bottom = 36.dp)
+                )
 
                 // D-pad (bottom-right)
                 DpadOverlay(

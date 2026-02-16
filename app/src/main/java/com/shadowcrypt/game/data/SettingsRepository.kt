@@ -18,7 +18,9 @@ class SettingsRepository(private val context: Context) {
         val soundVolume: Float = 0.8f,
         val hapticEnabled: Boolean = true,
         val tutorialSeen: Boolean = false,
-        val difficulty: String = "Normal"
+        val difficulty: String = "Normal",
+        val fontScale: Float = 1.0f,
+        val highContrastMode: Boolean = false
     )
 
     private companion object {
@@ -27,6 +29,8 @@ class SettingsRepository(private val context: Context) {
         val HAPTIC_ENABLED = booleanPreferencesKey("haptic_enabled")
         val TUTORIAL_SEEN = booleanPreferencesKey("tutorial_seen")
         val DIFFICULTY = stringPreferencesKey("difficulty")
+        val FONT_SCALE = floatPreferencesKey("font_scale")
+        val HIGH_CONTRAST = booleanPreferencesKey("high_contrast")
     }
 
     val settings: Flow<Settings> = context.dataStore.data.map { prefs ->
@@ -35,7 +39,9 @@ class SettingsRepository(private val context: Context) {
             soundVolume = prefs[SOUND_VOLUME] ?: 0.8f,
             hapticEnabled = prefs[HAPTIC_ENABLED] ?: true,
             tutorialSeen = prefs[TUTORIAL_SEEN] ?: false,
-            difficulty = prefs[DIFFICULTY] ?: "Normal"
+            difficulty = prefs[DIFFICULTY] ?: "Normal",
+            fontScale = prefs[FONT_SCALE] ?: 1.0f,
+            highContrastMode = prefs[HIGH_CONTRAST] ?: false
         )
     }
 
@@ -57,6 +63,14 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setDifficulty(difficulty: String) {
         context.dataStore.edit { it[DIFFICULTY] = difficulty }
+    }
+
+    suspend fun setFontScale(scale: Float) {
+        context.dataStore.edit { it[FONT_SCALE] = scale.coerceIn(0.8f, 1.5f) }
+    }
+
+    suspend fun setHighContrast(enabled: Boolean) {
+        context.dataStore.edit { it[HIGH_CONTRAST] = enabled }
     }
 
 }

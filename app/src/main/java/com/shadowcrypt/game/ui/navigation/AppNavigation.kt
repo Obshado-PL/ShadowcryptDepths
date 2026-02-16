@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shadowcrypt.game.ServiceLocator
+import com.shadowcrypt.game.data.MetaProgressRepository
 import com.shadowcrypt.game.data.SettingsRepository
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -124,6 +125,9 @@ fun AppNavigation() {
             val currentSettings by ServiceLocator.settingsRepository.settings.collectAsStateWithLifecycle(
                 initialValue = SettingsRepository.Settings()
             )
+            val metaProgress by ServiceLocator.metaProgressRepository.progress.collectAsStateWithLifecycle(
+                initialValue = MetaProgressRepository.MetaProgress()
+            )
             ClassSelectScreen(
                 onClassSelected = { classId ->
                     val seed = if (route.isDaily) {
@@ -135,7 +139,12 @@ fun AppNavigation() {
                         GameRoute(
                             classId = classId,
                             seed = seed,
-                            difficulty = currentSettings.difficulty
+                            difficulty = currentSettings.difficulty,
+                            upgradeHp = metaProgress.upgradeHp,
+                            upgradeAtk = metaProgress.upgradeAtk,
+                            upgradeDef = metaProgress.upgradeDef,
+                            upgradeMag = metaProgress.upgradeMag,
+                            upgradeSpd = metaProgress.upgradeSpd
                         )
                     ) {
                         popUpTo(MainMenuRoute)
@@ -168,6 +177,11 @@ fun AppNavigation() {
                 seed = route.seed,
                 loadSave = route.loadSave,
                 difficultyName = route.difficulty,
+                upgradeHp = route.upgradeHp,
+                upgradeAtk = route.upgradeAtk,
+                upgradeDef = route.upgradeDef,
+                upgradeMag = route.upgradeMag,
+                upgradeSpd = route.upgradeSpd,
                 onGameOver = { floorReached, enemiesKilled, turnsTaken, won, lastMessages ->
                     GameSaveManager.deleteSave(context)
                     navController.navigate(

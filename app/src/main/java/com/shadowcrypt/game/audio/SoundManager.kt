@@ -91,6 +91,8 @@ class SoundManager {
         GameEvent.PlayerDeath -> generateSweep(durationMs = 300, startFreq = 400.0, endFreq = 80.0)
         GameEvent.Victory -> generateFanfare(durationMs = 400)
         GameEvent.TrapTriggered -> generateThud(durationMs = 80, freq = 180.0)
+        GameEvent.SkillUse -> generateSweep(durationMs = 150, startFreq = 300.0, endFreq = 600.0)
+        GameEvent.QuestComplete -> generateArpeggio(durationMs = 200)
     }
 
     /** Short click/tick at a fixed frequency */

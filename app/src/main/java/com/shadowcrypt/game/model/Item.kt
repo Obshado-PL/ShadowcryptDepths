@@ -22,6 +22,8 @@ sealed class ItemEffect {
     data object RevealMap : ItemEffect()
     data class FreezeEnemies(val turns: Int) : ItemEffect()
     data object CureStatus : ItemEffect()
+    data class RestoreHunger(val amount: Int) : ItemEffect()
+    data class RestoreTorch(val amount: Int) : ItemEffect()
 }
 
 data class ItemTemplate(

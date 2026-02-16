@@ -46,17 +46,22 @@ class GameViewModel : ViewModel() {
     private val _floatingTexts = MutableStateFlow<List<FloatingText>>(emptyList())
     val floatingTexts: StateFlow<List<FloatingText>> = _floatingTexts.asStateFlow()
 
+    private var previousState: GameState? = null
+
     private val _playerFlashUntil = MutableStateFlow(0L)
     val playerFlashUntil: StateFlow<Long> = _playerFlashUntil.asStateFlow()
 
     private var autoWalkJob: Job? = null
 
-    fun initGame(classId: String, seed: Long, difficulty: Difficulty = Difficulty.Normal) {
+    fun initGame(
+        classId: String, seed: Long, difficulty: Difficulty = Difficulty.Normal,
+        hpBonus: Int = 0, atkBonus: Int = 0, defBonus: Int = 0, magBonus: Int = 0, spdBonus: Int = 0
+    ) {
         if (_gameState.value != null) return
 
         viewModelScope.launch(Dispatchers.Default) {
             _isLoading.value = true
-            val state = engine.newGame(classId, seed, difficulty)
+            val state = engine.newGame(classId, seed, difficulty, hpBonus, atkBonus, defBonus, magBonus, spdBonus)
             _gameState.value = state
             _isLoading.value = false
         }
@@ -178,6 +183,17 @@ class GameViewModel : ViewModel() {
         _gameState.value = InventoryEngine.dropItem(current, itemId)
     }
 
+    fun useSkill(skillId: String) {
+        val current = _gameState.value ?: return
+        if (current.status != GameStatus.Playing || _showPauseMenu.value) return
+        cancelAutoWalk()
+
+        viewModelScope.launch(Dispatchers.Default) {
+            val newState = engine.castSkill(current, skillId)
+            updateWithEvents(current, newState)
+        }
+    }
+
     // ===== Auto-Walk =====
 
     private fun startAutoWalk(target: Position) {
@@ -232,12 +248,31 @@ class GameViewModel : ViewModel() {
         }
     }
 
+    fun undoLastMove() {
+        val prev = previousState ?: return
+        _gameState.value = prev
+        previousState = null
+        _floatingTexts.value = emptyList()
+    }
+
     private fun updateWithEvents(old: GameState, new: GameState) {
+        previousState = old
         val events = detectEvents(old, new)
         fireEvents(events)
         createFloatingTexts(old, new)
         _gameState.value = new
         autoSave()
+
+        // Discover visible enemy types for bestiary
+        val visibleEnemyTypes = new.enemies
+            .filter { it.isAlive && new.visibilityMap[it.position] == Visibility.Visible }
+            .map { it.typeId }
+            .toSet()
+        if (visibleEnemyTypes.isNotEmpty()) {
+            viewModelScope.launch(Dispatchers.IO) {
+                ServiceLocator.metaProgressRepository.discoverEnemies(visibleEnemyTypes)
+            }
+        }
     }
 
     private fun createFloatingTexts(old: GameState, new: GameState) {
@@ -254,14 +289,21 @@ class GameViewModel : ViewModel() {
         // Detect if last hit was critical
         val isCrit = new.lastCritical
 
+        // Damage type color based on player class
+        val dmgColor = when {
+            isCrit -> XpGold
+            new.player.classId == "mage" -> Color(0xFF00DDFF)    // cyan for magic
+            new.player.classId == "cleric" -> Color(0xFFFFDD44)  // golden for holy
+            else -> Color.White                                    // white for physical
+        }
+
         // Enemies took damage
         for (newEnemy in new.enemies) {
             val oldEnemy = old.enemies.find { it.id == newEnemy.id } ?: continue
             if (newEnemy.hp < oldEnemy.hp) {
                 val damage = oldEnemy.hp - newEnemy.hp
                 val text = if (isCrit) "CRIT -$damage" else "-$damage"
-                val color = if (isCrit) XpGold else Color.White
-                newFloats.add(FloatingText(text, newEnemy.position, color, now))
+                newFloats.add(FloatingText(text, newEnemy.position, dmgColor, now))
             }
         }
 
@@ -270,8 +312,7 @@ class GameViewModel : ViewModel() {
         for (oldEnemy in old.enemies) {
             if (oldEnemy.id !in newEnemyIds && oldEnemy.isAlive) {
                 val text = if (isCrit) "CRIT -${oldEnemy.hp}" else "-${oldEnemy.hp}"
-                val color = if (isCrit) XpGold else Color.White
-                newFloats.add(FloatingText(text, oldEnemy.position, color, now))
+                newFloats.add(FloatingText(text, oldEnemy.position, dmgColor, now))
             }
         }
 

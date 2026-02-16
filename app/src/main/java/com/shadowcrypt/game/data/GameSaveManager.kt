@@ -19,6 +19,8 @@ import com.shadowcrypt.game.model.ItemCategory
 import com.shadowcrypt.game.model.ItemEffect
 import com.shadowcrypt.game.model.Player
 import com.shadowcrypt.game.model.Position
+import com.shadowcrypt.game.model.Quest
+import com.shadowcrypt.game.model.QuestType
 import com.shadowcrypt.game.model.Rarity
 import com.shadowcrypt.game.model.RoomEventType
 import com.shadowcrypt.game.model.StatusEffect
@@ -88,7 +90,8 @@ object GameSaveManager {
             floorItems = state.floorItems.map { toSaveFloorItem(it) },
             interactableUsed = state.interactables.map { it.used },
             gridOverrides = buildGridOverrides(state),
-            difficulty = state.difficulty.name
+            difficulty = state.difficulty.name,
+            quests = state.quests.map { SaveQuest(it.id, it.type.name, it.description, it.targetCount, it.progress, it.rewardXp, it.completed) }
         )
     }
 
@@ -144,7 +147,11 @@ object GameSaveManager {
             interactables = interactables,
             lastTrapTriggered = data.lastTrapTriggered,
             lastCritical = data.lastCritical,
-            difficulty = Difficulty.entries.find { it.name == data.difficulty } ?: Difficulty.Normal
+            difficulty = Difficulty.entries.find { it.name == data.difficulty } ?: Difficulty.Normal,
+            quests = data.quests.map { sq ->
+                Quest(sq.id, QuestType.entries.find { it.name == sq.type } ?: QuestType.KillEnemies,
+                    sq.description, sq.targetCount, sq.progress, sq.rewardXp, sq.completed)
+            }
         )
     }
 
@@ -186,7 +193,12 @@ object GameSaveManager {
         weapon = p.equipment.weapon?.let { toSaveItem(it) },
         armor = p.equipment.armor?.let { toSaveItem(it) },
         accessory = p.equipment.accessory?.let { toSaveItem(it) },
-        buffs = p.activeBuffs.map { toSaveBuff(it) }
+        buffs = p.activeBuffs.map { toSaveBuff(it) },
+        skillCooldowns = p.skillCooldowns,
+        torchFuel = p.torchFuel,
+        maxTorchFuel = p.maxTorchFuel,
+        hunger = p.hunger,
+        maxHunger = p.maxHunger
     )
 
     private fun fromSavePlayer(sp: SavePlayer, classId: String, floor: Int): Player = Player(
@@ -202,7 +214,12 @@ object GameSaveManager {
             armor = sp.armor?.let { fromSaveItem(it) },
             accessory = sp.accessory?.let { fromSaveItem(it) }
         ),
-        activeBuffs = sp.buffs.map { fromSaveBuff(it) }
+        activeBuffs = sp.buffs.map { fromSaveBuff(it) },
+        skillCooldowns = sp.skillCooldowns,
+        torchFuel = sp.torchFuel,
+        maxTorchFuel = sp.maxTorchFuel,
+        hunger = sp.hunger,
+        maxHunger = sp.maxHunger
     )
 
     // === Enemy ===
@@ -217,7 +234,8 @@ object GameSaveManager {
         alertedByPlayer = e.alertedByPlayer,
         displayName = e.displayName,
         isBoss = e.isBoss, bossPhase = e.bossPhase,
-        buffs = e.activeBuffs.map { toSaveBuff(it) }
+        buffs = e.activeBuffs.map { toSaveBuff(it) },
+        isElite = e.isElite
     )
 
     private fun fromSaveEnemy(se: SaveEnemy): Enemy = Enemy(
@@ -230,7 +248,8 @@ object GameSaveManager {
         alertedByPlayer = se.alertedByPlayer,
         displayName = se.displayName,
         isBoss = se.isBoss, bossPhase = se.bossPhase,
-        activeBuffs = se.buffs.map { fromSaveBuff(it) }
+        activeBuffs = se.buffs.map { fromSaveBuff(it) },
+        isElite = se.isElite
     )
 
     // === Item ===
@@ -269,6 +288,8 @@ object GameSaveManager {
         is ItemEffect.RevealMap -> "revealMap"
         is ItemEffect.FreezeEnemies -> "freeze:${effect.turns}"
         is ItemEffect.CureStatus -> "cureStatus"
+        is ItemEffect.RestoreHunger -> "restoreHunger:${effect.amount}"
+        is ItemEffect.RestoreTorch -> "restoreTorch:${effect.amount}"
     }
 
     private fun decodeEffect(str: String): ItemEffect? {
@@ -283,6 +304,8 @@ object GameSaveManager {
             "revealMap" -> ItemEffect.RevealMap
             "freeze" -> ItemEffect.FreezeEnemies(parts[1].toInt())
             "cureStatus" -> ItemEffect.CureStatus
+            "restoreHunger" -> ItemEffect.RestoreHunger(parts[1].toInt())
+            "restoreTorch" -> ItemEffect.RestoreTorch(parts[1].toInt())
             else -> null
         }
     }
@@ -338,7 +361,8 @@ data class SaveData(
     val floorItems: List<SaveFloorItem>,
     val interactableUsed: List<Boolean>,
     val gridOverrides: List<SaveGridOverride>,
-    val difficulty: String = "Normal"
+    val difficulty: String = "Normal",
+    val quests: List<SaveQuest> = emptyList()
 )
 
 @Serializable
@@ -352,7 +376,12 @@ data class SavePlayer(
     val weapon: SaveItem? = null,
     val armor: SaveItem? = null,
     val accessory: SaveItem? = null,
-    val buffs: List<SaveBuff>
+    val buffs: List<SaveBuff>,
+    val skillCooldowns: Map<String, Int> = emptyMap(),
+    val torchFuel: Int = 100,
+    val maxTorchFuel: Int = 100,
+    val hunger: Int = 100,
+    val maxHunger: Int = 100
 )
 
 @Serializable
@@ -366,7 +395,8 @@ data class SaveEnemy(
     val alertedByPlayer: Boolean,
     val displayName: String,
     val isBoss: Boolean, val bossPhase: Int,
-    val buffs: List<SaveBuff>
+    val buffs: List<SaveBuff>,
+    val isElite: Boolean = false
 )
 
 @Serializable
@@ -400,6 +430,17 @@ data class SaveFloorItem(
 
 @Serializable
 data class SavePos(val x: Int, val y: Int)
+
+@Serializable
+data class SaveQuest(
+    val id: String,
+    val type: String,
+    val description: String,
+    val targetCount: Int,
+    val progress: Int,
+    val rewardXp: Int,
+    val completed: Boolean
+)
 
 @Serializable
 data class SaveGridOverride(val x: Int, val y: Int, val tile: String)

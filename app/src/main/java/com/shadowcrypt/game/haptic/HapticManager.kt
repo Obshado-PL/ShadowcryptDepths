@@ -42,7 +42,12 @@ class HapticManager(context: Context) {
             )
             GameEvent.FloorDescend -> oneShot(30, 100)
             GameEvent.TrapTriggered -> oneShot(30, 180)
+            GameEvent.SkillUse -> oneShot(20, 150)
             GameEvent.PlayerDeath -> oneShot(100, 255)
+            GameEvent.QuestComplete -> waveform(
+                timings = longArrayOf(0, 15, 30, 20),
+                amplitudes = intArrayOf(0, 100, 0, 180)
+            )
             GameEvent.Victory -> waveform(
                 timings = longArrayOf(0, 25, 40, 25, 40, 25, 40, 30),
                 amplitudes = intArrayOf(0, 100, 0, 140, 0, 180, 0, 255)

@@ -174,6 +174,16 @@ object InventoryEngine {
                 newPlayer = newPlayer.copy(activeBuffs = curedBuffs)
                 msg = "Used ${item.displayName}. Status effects cured!"
             }
+            is ItemEffect.RestoreHunger -> {
+                val restored = min(effect.amount, newPlayer.maxHunger - newPlayer.hunger)
+                newPlayer = newPlayer.copy(hunger = newPlayer.hunger + restored)
+                msg = "Used ${item.displayName}. Restored $restored hunger."
+            }
+            is ItemEffect.RestoreTorch -> {
+                val restored = min(effect.amount, newPlayer.maxTorchFuel - newPlayer.torchFuel)
+                newPlayer = newPlayer.copy(torchFuel = newPlayer.torchFuel + restored)
+                msg = "Used ${item.displayName}. Restored $restored torch fuel."
+            }
         }
 
         return state.copy(player = newPlayer).withMessage(msg)
