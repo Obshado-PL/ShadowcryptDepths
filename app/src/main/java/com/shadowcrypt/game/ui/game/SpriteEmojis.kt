@@ -145,8 +145,8 @@ private val ENEMY_EMOJI_MAP: Map<String, String> = mapOf(
     "plague_rat" to "\uD83D\uDC01",         // 🐁
     // Caverns
     "cave_spider" to "\uD83D\uDD77\uFE0F",  // 🕷️
-    "stone_golem" to "\uD83E\uDEA8",        // 🪨
-    "crystal_sentinel" to "\uD83D\uDC8E",   // 💎
+    "stone_golem" to "\uD83D\uDDFF",        // 🗿
+    "crystal_sentinel" to "\uD83D\uDD37",   // 🔷
     "troglodyte" to "\uD83D\uDC79",         // 👹
     // Inferno
     "fire_imp" to "\uD83D\uDE08",           // 😈
@@ -155,8 +155,8 @@ private val ENEMY_EMOJI_MAP: Map<String, String> = mapOf(
     "infernal_priest" to "\uD83E\uDDD9",    // 🧙
     // Void
     "void_wraith" to "\uD83D\uDC64",        // 👤
-    "phase_shifter" to "\uD83C\uDF00",      // 🌀
-    "entropy_stalker" to "\uD83D\uDD73\uFE0F", // 🕳️
+    "phase_shifter" to "\uD83D\uDC7E",      // 👾
+    "entropy_stalker" to "\uD83C\uDF11",     // 🌑
     "abyssal_eye" to "\uD83D\uDC41\uFE0F",  // 👁️
     // Bosses
     "bone_warden" to "\u2620\uFE0F",        // ☠️

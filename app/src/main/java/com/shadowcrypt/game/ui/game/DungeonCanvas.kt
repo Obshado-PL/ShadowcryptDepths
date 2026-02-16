@@ -419,12 +419,15 @@ fun DungeonCanvas(
             val ey = cameraY + enemy.position.y * tileSize
             val color = if (enemy.isBoss) BossColor else EnemyColor
 
-            // Colored background glow (slightly larger than tile for visibility)
-            val glowInset = -tileSize * 0.02f
+            // Pulsing glow ring for visibility
+            val pulse = 0.6f + 0.4f * kotlin.math.sin(
+                (currentTime % 1500L) / 1500.0 * 2.0 * kotlin.math.PI
+            ).toFloat()
+            val glowExpand = tileSize * 0.08f * pulse
             drawRect(
-                color = color.copy(alpha = 0.3f),
-                topLeft = Offset(ex + glowInset, ey + glowInset),
-                size = Size(tileSize - glowInset * 2, tileSize - glowInset * 2)
+                color = color.copy(alpha = 0.45f * pulse),
+                topLeft = Offset(ex - glowExpand, ey - glowExpand),
+                size = Size(tileSize + glowExpand * 2, tileSize + glowExpand * 2)
             )
 
             // Enemy body
@@ -449,13 +452,13 @@ fun DungeonCanvas(
                 enemy.isBoss -> BossColor
                 enemy.isElite -> Color(0xFFFF8C00) // orange for elites
                 enemy.alertedByPlayer -> Color.Yellow
-                else -> Color.White.copy(alpha = 0.4f)
+                else -> Color.White.copy(alpha = 0.7f)
             }
             val outlineWidth = when {
-                enemy.isBoss -> 2.5f
-                enemy.isElite -> 2f
-                enemy.alertedByPlayer -> 1.5f
-                else -> 1f
+                enemy.isBoss -> 3f
+                enemy.isElite -> 2.5f
+                enemy.alertedByPlayer -> 2f
+                else -> 1.5f
             }
             drawRect(
                 color = outlineColor,
