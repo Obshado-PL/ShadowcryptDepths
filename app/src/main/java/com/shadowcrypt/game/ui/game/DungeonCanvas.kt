@@ -15,9 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -80,7 +82,7 @@ fun DungeonCanvas(
     onSwipeMove: (dx: Int, dy: Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
-    var scale by remember { mutableFloatStateOf(2.0f) }
+    var scale by remember { mutableFloatStateOf(2.5f) }
     var panOffset by remember { mutableStateOf(Offset.Zero) }
 
     val baseTileSize = 24f
@@ -96,6 +98,16 @@ fun DungeonCanvas(
         animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
         label = "cameraY"
     )
+
+    // Continuous animation driver — forces Canvas redraw every frame so that
+    // enemy pulsing glows, status-effect dots, and time-based animations stay smooth,
+    // and prevents enemies from disappearing between state changes.
+    var animationTick by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            withFrameNanos { nanos -> animationTick = nanos }
+        }
+    }
 
     // Screen shake on player damage
     val shakeOffset = remember { Animatable(0f) }
@@ -185,10 +197,13 @@ fun DungeonCanvas(
         val tileSize = baseTileSize * scale
         val canvasCenterX = size.width / 2f
         val canvasCenterY = size.height / 2f
+        @Suppress("UNUSED_EXPRESSION") animationTick // read to force continuous redraw
         val currentTime = System.currentTimeMillis()
 
-        // Emoji rendering paints
+        // Emoji rendering paints (use DEFAULT typeface for emoji support)
+        val emojiTypeface = Typeface.DEFAULT
         val emojiPaint = Paint().apply {
+            typeface = emojiTypeface
             textSize = tileSize * 0.75f
             textAlign = Paint.Align.CENTER
             isAntiAlias = true
@@ -197,6 +212,7 @@ fun DungeonCanvas(
 
         // Smaller paint for wall texture and floor decorations
         val wallPaint = Paint().apply {
+            typeface = emojiTypeface
             textSize = tileSize * 0.55f
             textAlign = Paint.Align.CENTER
             isAntiAlias = true
@@ -205,6 +221,7 @@ fun DungeonCanvas(
         val wallYOffset = -(wallPaint.ascent() + wallPaint.descent()) / 2f
 
         val decoPaint = Paint().apply {
+            typeface = emojiTypeface
             textSize = tileSize * 0.45f
             textAlign = Paint.Align.CENTER
             isAntiAlias = true
@@ -400,6 +417,7 @@ fun DungeonCanvas(
         val hitWobbleDuration = 300L
         val enemyInset = tileSize * 0.08f
         val enemyEmojiPaint = Paint().apply {
+            typeface = emojiTypeface
             textSize = tileSize * 0.85f
             textAlign = Paint.Align.CENTER
             isAntiAlias = true
@@ -487,6 +505,7 @@ fun DungeonCanvas(
             val intentEmoji = getEnemyIntent(enemy, state)
             if (intentEmoji != null) {
                 val intentPaint = Paint().apply {
+                    typeface = emojiTypeface
                     textSize = tileSize * 0.4f
                     textAlign = Paint.Align.CENTER
                     isAntiAlias = true
@@ -707,6 +726,7 @@ fun DungeonCanvas(
         // Player emoji (larger, skip during damage flash)
         if (currentTime >= playerFlashUntil) {
             val playerEmojiPaint = Paint().apply {
+                typeface = emojiTypeface
                 textSize = tileSize * 0.85f
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
@@ -774,6 +794,7 @@ fun DungeonCanvas(
 
                 // Draw stairs emoji at clamped position
                 val stairsPaint = Paint().apply {
+                    typeface = emojiTypeface
                     textSize = tileSize * 0.7f
                     textAlign = Paint.Align.CENTER
                     isAntiAlias = true
