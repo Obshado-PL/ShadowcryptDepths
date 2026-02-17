@@ -79,6 +79,8 @@ fun GameScreen(
     val showInventory by viewModel.showInventory.collectAsStateWithLifecycle()
     val showPauseMenu by viewModel.showPauseMenu.collectAsStateWithLifecycle()
     val floatingTexts by viewModel.floatingTexts.collectAsStateWithLifecycle()
+    val canvasEffects by viewModel.canvasEffects.collectAsStateWithLifecycle()
+    val achievementToasts by viewModel.achievementToasts.collectAsStateWithLifecycle()
     val playerFlashUntil by viewModel.playerFlashUntil.collectAsStateWithLifecycle()
 
     val settings by ServiceLocator.settingsRepository.settings.collectAsStateWithLifecycle(
@@ -146,11 +148,14 @@ fun GameScreen(
                     }
                 }
 
-                // Animation loop for floating texts
+                // Animation loop for floating texts and effects
                 LaunchedEffect(Unit) {
                     while (true) {
                         withFrameMillis {
-                            viewModel.removeExpiredFloatingTexts(System.currentTimeMillis())
+                            val now = System.currentTimeMillis()
+                            viewModel.removeExpiredFloatingTexts(now)
+                            viewModel.removeExpiredCanvasEffects(now)
+                            viewModel.removeExpiredToasts(now)
                         }
                     }
                 }
@@ -159,6 +164,7 @@ fun GameScreen(
                 DungeonCanvas(
                     state = state,
                     floatingTexts = floatingTexts,
+                    canvasEffects = canvasEffects,
                     playerFlashUntil = playerFlashUntil,
                     onTileTap = { viewModel.tapTile(it) },
                     onTileLongPress = { pos ->
@@ -178,6 +184,12 @@ fun GameScreen(
                 // Top HUD
                 TopHud(
                     state = state,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
+
+                // Achievement toast banner
+                AchievementToastBanner(
+                    toasts = achievementToasts,
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
 
@@ -235,6 +247,24 @@ fun GameScreen(
                     QuestTracker(
                         quests = state.quests,
                         modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
+
+                // Auto-explore button (bottom-left, above BAG)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 16.dp, bottom = 68.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(HudBackground)
+                        .clickable { viewModel.autoExplore() }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "EXPLORE",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextPrimary
                     )
                 }
 

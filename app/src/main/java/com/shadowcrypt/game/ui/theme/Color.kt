@@ -50,6 +50,13 @@ val RarityLegendary = Color(0xFFFFAA00)      // Gold
 val FogUnexplored = Color(0xFF000000)        // Solid black (never seen)
 val FogExplored = Color(0x99000000)          // Semi-transparent (previously seen)
 
+// ===== Status Effect Colors =====
+
+val StatusPoison = Color(0xFF44DD44)       // Green
+val StatusBurn = Color(0xFFFF8800)         // Orange
+val StatusStun = Color(0xFF88AAFF)         // Light blue
+val StatusSlow = Color(0xFF4488FF)         // Blue
+
 // ===== UI Colors =====
 
 val HealthRed = Color(0xFFFF4444)            // HP bar color

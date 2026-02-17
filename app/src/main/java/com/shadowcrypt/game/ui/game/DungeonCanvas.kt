@@ -58,9 +58,14 @@ import com.shadowcrypt.game.ui.theme.SewerFloor
 import com.shadowcrypt.game.ui.theme.SewerWall
 import com.shadowcrypt.game.ui.theme.StairsColor
 import com.shadowcrypt.game.ui.theme.TrapColor
+import com.shadowcrypt.game.ui.theme.StatusBurn
+import com.shadowcrypt.game.ui.theme.StatusPoison
+import com.shadowcrypt.game.ui.theme.StatusSlow
+import com.shadowcrypt.game.ui.theme.StatusStun
 import com.shadowcrypt.game.ui.theme.VoidFloor
 import com.shadowcrypt.game.ui.theme.VoidWall
 import com.shadowcrypt.game.ui.theme.WaterColor
+import com.shadowcrypt.game.model.StatusEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import kotlin.math.roundToInt
 
@@ -68,6 +73,7 @@ import kotlin.math.roundToInt
 fun DungeonCanvas(
     state: GameState,
     floatingTexts: List<FloatingText> = emptyList(),
+    canvasEffects: List<CanvasEffect> = emptyList(),
     playerFlashUntil: Long = 0L,
     onTileTap: (Position) -> Unit,
     onTileLongPress: (Position) -> Unit = {},
@@ -447,8 +453,18 @@ fun DungeonCanvas(
                 )
             }
 
-            // Outline — always visible (white default, special colors for alerted/boss/elite)
-            val outlineColor = when {
+            // Outline — tinted by status effect if active, otherwise by enemy tier
+            val statusTint = enemy.activeBuffs.mapNotNull { it.statusEffect }
+                .distinct()
+                .minByOrNull {
+                    when (it) {
+                        StatusEffect.Burn -> 0
+                        StatusEffect.Poison -> 1
+                        StatusEffect.Stun -> 2
+                        StatusEffect.Slow -> 3
+                    }
+                }?.let { statusEffectColor(it) }
+            val outlineColor = statusTint ?: when {
                 enemy.isBoss -> BossColor
                 enemy.isElite -> Color(0xFFFF8C00) // orange for elites
                 enemy.alertedByPlayer -> Color.Yellow
@@ -503,6 +519,161 @@ fun DungeonCanvas(
                     size = Size(barWidth * enemy.hpFraction, barHeight)
                 )
             }
+
+            // Status effect dots below enemy
+            val enemyStatuses = enemy.activeBuffs.mapNotNull { it.statusEffect }.distinct()
+            if (enemyStatuses.isNotEmpty()) {
+                val dotRadius = tileSize * 0.06f
+                val dotSpacing = tileSize * 0.18f
+                val totalDotsWidth = enemyStatuses.size * dotSpacing
+                val dotsStartX = ex + tileSize / 2f - totalDotsWidth / 2f + dotSpacing / 2f
+                val dotsY = ey + tileSize + tileSize * 0.12f
+
+                for ((i, effect) in enemyStatuses.withIndex()) {
+                    val dotX = dotsStartX + i * dotSpacing
+                    val dotPulse = 0.7f + 0.3f * kotlin.math.sin(
+                        (currentTime % 1000L) / 1000.0 * 2.0 * kotlin.math.PI + i * 0.5
+                    ).toFloat()
+                    drawCircle(
+                        color = statusEffectColor(effect).copy(alpha = dotPulse),
+                        radius = dotRadius,
+                        center = Offset(dotX, dotsY)
+                    )
+                }
+            }
+        }
+
+        // Draw canvas effects (death, skill, pickup)
+        for (effect in canvasEffects) {
+            val progress = effect.progress(currentTime)
+            if (progress >= 1f) continue
+            val alpha = (1f - progress).coerceIn(0f, 1f)
+
+            when (effect) {
+                is CanvasEffect.DeathEffect -> {
+                    val ex = cameraX + effect.position.x * tileSize
+                    val ey = cameraY + effect.position.y * tileSize
+
+                    // Scale up from 1.0 to 1.5 while fading out
+                    val scale = 1f + progress * 0.5f
+                    val scaledSize = tileSize * scale
+                    val offset = (scaledSize - tileSize) / 2f
+
+                    // Expanding colored ring
+                    drawRect(
+                        color = effect.color.copy(alpha = alpha * 0.6f),
+                        topLeft = Offset(ex - offset, ey - offset),
+                        size = Size(scaledSize, scaledSize),
+                        style = Stroke(width = 3f * (1f - progress))
+                    )
+
+                    // Fading enemy emoji at center
+                    drawIntoCanvas { canvas ->
+                        enemyEmojiPaint.alpha = (alpha * 255).toInt()
+                        canvas.nativeCanvas.drawText(
+                            enemyEmoji(effect.enemyTypeId),
+                            ex + tileSize / 2f,
+                            ey + tileSize / 2f + enemyEmojiYOffset,
+                            enemyEmojiPaint
+                        )
+                        enemyEmojiPaint.alpha = 255
+                    }
+
+                    // X cross-out in the latter part of animation
+                    if (progress > 0.3f) {
+                        val crossAlpha = ((progress - 0.3f) / 0.7f * alpha)
+                        val crossInset = tileSize * 0.2f
+                        drawLine(
+                            color = Color.White.copy(alpha = crossAlpha),
+                            start = Offset(ex + crossInset, ey + crossInset),
+                            end = Offset(ex + tileSize - crossInset, ey + tileSize - crossInset),
+                            strokeWidth = 2f
+                        )
+                        drawLine(
+                            color = Color.White.copy(alpha = crossAlpha),
+                            start = Offset(ex + tileSize - crossInset, ey + crossInset),
+                            end = Offset(ex + crossInset, ey + tileSize - crossInset),
+                            strokeWidth = 2f
+                        )
+                    }
+                }
+
+                is CanvasEffect.SkillEffect -> {
+                    when (effect.effectType) {
+                        SkillEffectType.ImpactFlash, SkillEffectType.MultiFlash -> {
+                            val flashSize = tileSize * (0.5f + progress * 0.8f)
+                            val cx = cameraX + effect.position.x * tileSize + tileSize / 2f
+                            val cy = cameraY + effect.position.y * tileSize + tileSize / 2f
+                            drawCircle(
+                                color = Color.White.copy(alpha = alpha * 0.8f),
+                                radius = flashSize * 0.3f,
+                                center = Offset(cx, cy)
+                            )
+                            drawCircle(
+                                color = effect.color.copy(alpha = alpha * 0.5f),
+                                radius = flashSize * 0.5f,
+                                center = Offset(cx, cy)
+                            )
+                        }
+                        SkillEffectType.AreaCircle -> {
+                            val maxRadius = effect.radius * tileSize + tileSize / 2f
+                            val currentRadius = maxRadius * (0.3f + progress * 0.7f)
+                            val cx = cameraX + effect.position.x * tileSize + tileSize / 2f
+                            val cy = cameraY + effect.position.y * tileSize + tileSize / 2f
+                            drawCircle(
+                                color = effect.color.copy(alpha = alpha * 0.2f),
+                                radius = currentRadius,
+                                center = Offset(cx, cy)
+                            )
+                            drawCircle(
+                                color = effect.color.copy(alpha = alpha * 0.6f),
+                                radius = currentRadius,
+                                center = Offset(cx, cy),
+                                style = Stroke(width = 2f)
+                            )
+                        }
+                        SkillEffectType.SelfGlow -> {
+                            val glowSize = tileSize * (1.0f + 0.5f * kotlin.math.sin(
+                                progress * kotlin.math.PI.toFloat() * 2
+                            ))
+                            val px = cameraX + effect.position.x * tileSize + tileSize / 2f
+                            val py = cameraY + effect.position.y * tileSize + tileSize / 2f
+                            drawCircle(
+                                color = effect.color.copy(alpha = alpha * 0.3f),
+                                radius = glowSize * 0.5f,
+                                center = Offset(px, py)
+                            )
+                        }
+                    }
+                }
+
+                is CanvasEffect.PickupEffect -> {
+                    val cx = cameraX + effect.position.x * tileSize + tileSize / 2f
+                    val cy = cameraY + effect.position.y * tileSize + tileSize / 2f
+
+                    val rise = tileSize * 0.6f * progress
+                    val spread = tileSize * 0.4f * progress
+                    val sparkleRadius = tileSize * 0.06f * (1f - progress * 0.5f)
+
+                    for (i in 0 until 4) {
+                        val angle = (i * 90f + progress * 120f) * (kotlin.math.PI.toFloat() / 180f)
+                        val sx = cx + kotlin.math.cos(angle) * spread
+                        val sy = cy - rise + kotlin.math.sin(angle) * spread * 0.5f
+                        drawCircle(
+                            color = effect.color.copy(alpha = alpha * 0.8f),
+                            radius = sparkleRadius,
+                            center = Offset(sx.toFloat(), sy.toFloat())
+                        )
+                    }
+
+                    // Central glow that shrinks
+                    drawCircle(
+                        color = effect.color.copy(alpha = alpha * 0.4f),
+                        radius = tileSize * 0.3f * (1f - progress),
+                        center = Offset(cx, cy)
+                    )
+                }
+            }
         }
 
         // Draw player (flash red when damaged)
@@ -547,6 +718,28 @@ fun DungeonCanvas(
                     playerScreenX + tileSize / 2f,
                     playerScreenY + tileSize / 2f + playerEmojiYOff,
                     playerEmojiPaint
+                )
+            }
+        }
+
+        // Player status effect dots
+        val playerStatuses = state.player.activeBuffs.mapNotNull { it.statusEffect }.distinct()
+        if (playerStatuses.isNotEmpty()) {
+            val dotRadius = tileSize * 0.06f
+            val dotSpacing = tileSize * 0.18f
+            val totalDotsWidth = playerStatuses.size * dotSpacing
+            val dotsStartX = playerScreenX + tileSize / 2f - totalDotsWidth / 2f + dotSpacing / 2f
+            val dotsY = playerScreenY + tileSize + tileSize * 0.12f
+
+            for ((i, effect) in playerStatuses.withIndex()) {
+                val dotX = dotsStartX + i * dotSpacing
+                val dotPulse = 0.7f + 0.3f * kotlin.math.sin(
+                    (currentTime % 1000L) / 1000.0 * 2.0 * kotlin.math.PI + i * 0.5
+                ).toFloat()
+                drawCircle(
+                    color = statusEffectColor(effect).copy(alpha = dotPulse),
+                    radius = dotRadius,
+                    center = Offset(dotX, dotsY)
                 )
             }
         }
@@ -692,6 +885,13 @@ private fun getEnemyIntent(enemy: Enemy, state: GameState): String? {
         enemy.alertedByPlayer -> "\u2757" // alert
         else -> null
     }
+}
+
+private fun statusEffectColor(effect: StatusEffect): Color = when (effect) {
+    StatusEffect.Poison -> StatusPoison
+    StatusEffect.Burn -> StatusBurn
+    StatusEffect.Stun -> StatusStun
+    StatusEffect.Slow -> StatusSlow
 }
 
 private fun Color.lighten(amount: Float): Color = Color(

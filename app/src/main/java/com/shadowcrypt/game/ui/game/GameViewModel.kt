@@ -16,9 +16,20 @@ import com.shadowcrypt.game.model.GameEvent
 import com.shadowcrypt.game.model.GameState
 import com.shadowcrypt.game.model.GameStatus
 import com.shadowcrypt.game.model.Position
+import com.shadowcrypt.game.model.Rarity
 import com.shadowcrypt.game.model.RoomType
+import com.shadowcrypt.game.model.Skill
+import com.shadowcrypt.game.model.Skills
+import com.shadowcrypt.game.model.SkillTarget
 import com.shadowcrypt.game.model.Visibility
+import com.shadowcrypt.game.ui.theme.BossColor
+import com.shadowcrypt.game.ui.theme.EnemyColor
 import com.shadowcrypt.game.ui.theme.HealthRed
+import com.shadowcrypt.game.ui.theme.RarityCommon
+import com.shadowcrypt.game.ui.theme.RarityEpic
+import com.shadowcrypt.game.ui.theme.RarityLegendary
+import com.shadowcrypt.game.ui.theme.RarityRare
+import com.shadowcrypt.game.ui.theme.RarityUncommon
 import com.shadowcrypt.game.ui.theme.XpGold
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -58,6 +69,15 @@ class GameViewModel : ViewModel() {
 
     private val _transitionTheme = MutableStateFlow<FloorTheme?>(null)
     val transitionTheme: StateFlow<FloorTheme?> = _transitionTheme.asStateFlow()
+
+    private val _canvasEffects = MutableStateFlow<List<CanvasEffect>>(emptyList())
+    val canvasEffects: StateFlow<List<CanvasEffect>> = _canvasEffects.asStateFlow()
+
+    private val _achievementToasts = MutableStateFlow<List<AchievementToast>>(emptyList())
+    val achievementToasts: StateFlow<List<AchievementToast>> = _achievementToasts.asStateFlow()
+
+    private val toastedAchievements = mutableSetOf<String>()
+    private var lastSkillUsed: Skill? = null
 
     private var autoWalkJob: Job? = null
 
@@ -149,6 +169,7 @@ class GameViewModel : ViewModel() {
             _isLoading.value = true
             val newState = engine.descendStairs(current)
             fireEvents(listOf(GameEvent.FloorDescend))
+            checkInGameAchievements(current, newState)
             _gameState.value = newState
             _isLoading.value = false
             // Crossfade ambient to new floor theme
@@ -209,9 +230,12 @@ class GameViewModel : ViewModel() {
         if (current.status != GameStatus.Playing || _showPauseMenu.value) return
         cancelAutoWalk()
 
+        lastSkillUsed = Skills.forClass(current.player.classId).find { it.id == skillId }
+
         viewModelScope.launch(Dispatchers.Default) {
             val newState = engine.castSkill(current, skillId)
             updateWithEvents(current, newState)
+            lastSkillUsed = null
         }
     }
 
@@ -261,6 +285,47 @@ class GameViewModel : ViewModel() {
         autoWalkJob = null
     }
 
+    // ===== Auto-Explore =====
+
+    fun autoExplore() {
+        val current = _gameState.value ?: return
+        if (current.status != GameStatus.Playing || _showPauseMenu.value) return
+        cancelAutoWalk()
+
+        val target = findExploreTarget(current)
+        if (target != null) {
+            startAutoWalk(target)
+        }
+    }
+
+    private fun findExploreTarget(state: GameState): Position? {
+        val dungeon = state.dungeon
+        val playerPos = state.player.position
+
+        // Find frontier: explored/visible walkable tiles adjacent to Hidden tiles
+        val frontier = mutableListOf<Position>()
+        for ((pos, vis) in state.visibilityMap) {
+            if (vis == Visibility.Hidden) continue
+            if (!dungeon.isWalkable(pos)) continue
+            val hasHiddenNeighbor = pos.cardinalNeighbors().any { neighbor ->
+                dungeon.inBounds(neighbor) &&
+                    (state.visibilityMap[neighbor] ?: Visibility.Hidden) == Visibility.Hidden
+            }
+            if (hasHiddenNeighbor) frontier.add(pos)
+        }
+
+        // Pick nearest frontier tile that has a valid path
+        val sorted = frontier.sortedBy { it.distanceTo(playerPos) }
+        for (candidate in sorted) {
+            val path = Pathfinding.findPath(playerPos, candidate, dungeon)
+            if (path != null) return candidate
+        }
+
+        // No frontier found — head to stairs
+        val stairsPath = Pathfinding.findPath(playerPos, dungeon.stairsDown, dungeon)
+        return if (stairsPath != null) dungeon.stairsDown else null
+    }
+
     // ===== Event Detection =====
 
     fun removeExpiredFloatingTexts(currentTimeMs: Long, durationMs: Long = 800L) {
@@ -269,11 +334,20 @@ class GameViewModel : ViewModel() {
         }
     }
 
+    fun removeExpiredCanvasEffects(currentTimeMs: Long) {
+        _canvasEffects.value = _canvasEffects.value.filterNot { it.isExpired(currentTimeMs) }
+    }
+
+    fun removeExpiredToasts(currentTimeMs: Long) {
+        _achievementToasts.value = _achievementToasts.value.filterNot { it.isExpired(currentTimeMs) }
+    }
+
     fun undoLastMove() {
         val prev = previousState ?: return
         _gameState.value = prev
         previousState = null
         _floatingTexts.value = emptyList()
+        _canvasEffects.value = emptyList()
     }
 
     private fun updateWithEvents(old: GameState, new: GameState) {
@@ -281,6 +355,7 @@ class GameViewModel : ViewModel() {
         val events = detectEvents(old, new)
         fireEvents(events)
         createFloatingTexts(old, new)
+        checkInGameAchievements(old, new)
         _gameState.value = new
         autoSave()
 
@@ -298,6 +373,7 @@ class GameViewModel : ViewModel() {
 
     private fun createFloatingTexts(old: GameState, new: GameState) {
         val newFloats = mutableListOf<FloatingText>()
+        val newEffects = mutableListOf<CanvasEffect>()
         val now = System.currentTimeMillis()
 
         // Player took damage → flash red
@@ -328,17 +404,154 @@ class GameViewModel : ViewModel() {
             }
         }
 
-        // Enemies killed (removed from list)
+        // Enemies killed (removed from list) → floating text + death effect
         val newEnemyIds = new.enemies.map { it.id }.toSet()
         for (oldEnemy in old.enemies) {
             if (oldEnemy.id !in newEnemyIds && oldEnemy.isAlive) {
                 val text = if (isCrit) "CRIT -${oldEnemy.hp}" else "-${oldEnemy.hp}"
                 newFloats.add(FloatingText(text, oldEnemy.position, dmgColor, now))
+                newEffects.add(
+                    CanvasEffect.DeathEffect(
+                        position = oldEnemy.position,
+                        createdAtMs = now,
+                        color = if (oldEnemy.isBoss) BossColor else EnemyColor,
+                        enemyTypeId = oldEnemy.typeId,
+                        isBoss = oldEnemy.isBoss
+                    )
+                )
+            }
+        }
+
+        // Item pickup effects
+        val newFloorItemIds = new.floorItems.map { it.item.id }.toSet()
+        for (oldFloorItem in old.floorItems) {
+            if (oldFloorItem.item.id !in newFloorItemIds) {
+                val rarityColor = when (oldFloorItem.item.rarity) {
+                    Rarity.Common -> RarityCommon
+                    Rarity.Uncommon -> RarityUncommon
+                    Rarity.Rare -> RarityRare
+                    Rarity.Epic -> RarityEpic
+                    Rarity.Legendary -> RarityLegendary
+                }
+                newEffects.add(
+                    CanvasEffect.PickupEffect(
+                        position = oldFloorItem.position,
+                        createdAtMs = now,
+                        color = rarityColor
+                    )
+                )
+            }
+        }
+
+        // Skill visual effects
+        val skill = lastSkillUsed
+        if (skill != null) {
+            val skillColor = when (skill.target) {
+                SkillTarget.Self -> Color(0xFF44DDFF)
+                SkillTarget.SingleEnemy -> Color(0xFFFFDD44)
+                SkillTarget.AllEnemies -> Color(0xFF88AAFF)
+                SkillTarget.AreaOfEffect -> Color(0xFFFF6600)
+            }
+
+            when (skill.target) {
+                SkillTarget.Self -> {
+                    newEffects.add(
+                        CanvasEffect.SkillEffect(
+                            position = new.player.position,
+                            createdAtMs = now,
+                            color = skillColor,
+                            effectType = SkillEffectType.SelfGlow,
+                            durationMs = 600L
+                        )
+                    )
+                }
+                SkillTarget.SingleEnemy -> {
+                    val affectedPositions = findAffectedPositions(old, new)
+                    for (pos in affectedPositions) {
+                        newEffects.add(
+                            CanvasEffect.SkillEffect(
+                                position = pos,
+                                createdAtMs = now,
+                                color = skillColor,
+                                effectType = SkillEffectType.ImpactFlash,
+                                durationMs = 350L
+                            )
+                        )
+                    }
+                }
+                SkillTarget.AllEnemies -> {
+                    val affectedPositions = findAffectedPositions(old, new)
+                    for (pos in affectedPositions) {
+                        newEffects.add(
+                            CanvasEffect.SkillEffect(
+                                position = pos,
+                                createdAtMs = now,
+                                color = skillColor,
+                                effectType = SkillEffectType.MultiFlash,
+                                durationMs = 400L
+                            )
+                        )
+                    }
+                }
+                SkillTarget.AreaOfEffect -> {
+                    val affectedPositions = findAffectedPositions(old, new)
+                    if (affectedPositions.isNotEmpty()) {
+                        val centerX = affectedPositions.sumOf { it.x } / affectedPositions.size
+                        val centerY = affectedPositions.sumOf { it.y } / affectedPositions.size
+                        newEffects.add(
+                            CanvasEffect.SkillEffect(
+                                position = Position(centerX, centerY),
+                                createdAtMs = now,
+                                color = skillColor,
+                                effectType = SkillEffectType.AreaCircle,
+                                radius = skill.aoeRadius,
+                                durationMs = 500L
+                            )
+                        )
+                    }
+                }
             }
         }
 
         if (newFloats.isNotEmpty()) {
             _floatingTexts.value = _floatingTexts.value + newFloats
+        }
+        if (newEffects.isNotEmpty()) {
+            _canvasEffects.value = _canvasEffects.value + newEffects
+        }
+    }
+
+    private fun findAffectedPositions(old: GameState, new: GameState): List<Position> {
+        val newEnemyIds = new.enemies.map { it.id }.toSet()
+        val damaged = new.enemies.filter { newE ->
+            val oldE = old.enemies.find { it.id == newE.id }
+            oldE != null && (newE.hp < oldE.hp || newE.activeBuffs.size > oldE.activeBuffs.size)
+        }.map { it.position }
+        val killed = old.enemies.filter { it.id !in newEnemyIds && it.isAlive }.map { it.position }
+        return damaged + killed
+    }
+
+    private fun checkInGameAchievements(old: GameState, new: GameState) {
+        val now = System.currentTimeMillis()
+        val newToasts = mutableListOf<AchievementToast>()
+
+        for (def in AchievementDefs.inGameAchievements) {
+            if (def.id in toastedAchievements) continue
+            if (def.checkInGame(old, new)) {
+                toastedAchievements.add(def.id)
+                newToasts.add(
+                    AchievementToast(
+                        id = def.id,
+                        title = def.title,
+                        emoji = def.emoji,
+                        createdAtMs = now
+                    )
+                )
+            }
+        }
+
+        if (newToasts.isNotEmpty()) {
+            _achievementToasts.value = _achievementToasts.value + newToasts
         }
     }
 
