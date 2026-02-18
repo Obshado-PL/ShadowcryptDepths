@@ -295,6 +295,13 @@ class GameViewModel : ViewModel() {
         val target = findExploreTarget(current)
         if (target != null) {
             startAutoWalk(target)
+        } else {
+            _floatingTexts.value = _floatingTexts.value + FloatingText(
+                "Nowhere to explore",
+                current.player.position,
+                androidx.compose.ui.graphics.Color.Gray,
+                System.currentTimeMillis()
+            )
         }
     }
 
@@ -317,12 +324,12 @@ class GameViewModel : ViewModel() {
         // Pick nearest frontier tile that has a valid path
         val sorted = frontier.sortedBy { it.distanceTo(playerPos) }
         for (candidate in sorted) {
-            val path = Pathfinding.findPath(playerPos, candidate, dungeon)
+            val path = Pathfinding.findPath(playerPos, candidate, dungeon, maxDistance = 200)
             if (path != null) return candidate
         }
 
         // No frontier found — head to stairs
-        val stairsPath = Pathfinding.findPath(playerPos, dungeon.stairsDown, dungeon)
+        val stairsPath = Pathfinding.findPath(playerPos, dungeon.stairsDown, dungeon, maxDistance = 200)
         return if (stairsPath != null) dungeon.stairsDown else null
     }
 

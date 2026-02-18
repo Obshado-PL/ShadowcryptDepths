@@ -8,7 +8,7 @@ import com.shadowcrypt.game.model.Visibility
  * Field of View engine using Recursive Shadowcasting.
  * Processes 8 octants around the player independently.
  */
-class FovEngine(private val viewRadius: Int = 16) {
+class FovEngine(private val viewRadius: Int = 24) {
 
     fun computeVisible(origin: Position, dungeon: DungeonFloor): Set<Position> {
         val visible = mutableSetOf(origin)

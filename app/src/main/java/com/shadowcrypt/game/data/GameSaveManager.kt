@@ -112,7 +112,7 @@ object GameSaveManager {
 
     private fun fromSaveData(data: SaveData): GameState {
         val generator = DungeonGenerator()
-        val fovEngine = FovEngine(viewRadius = 16)
+        val fovEngine = FovEngine(viewRadius = 24)
         val dungeon = generator.generate(data.currentFloor, data.seed)
 
         // Apply grid overrides (triggered traps)

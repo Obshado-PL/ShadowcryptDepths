@@ -30,7 +30,7 @@ import kotlin.random.Random
 
 class GameEngine(
     private val dungeonGenerator: DungeonGenerator = DungeonGenerator(),
-    private val fovEngine: FovEngine = FovEngine(viewRadius = 16)
+    private val fovEngine: FovEngine = FovEngine(viewRadius = 24)
 ) {
 
     fun newGame(

@@ -25,7 +25,7 @@ object Pathfinding {
         val cameFrom = mutableMapOf<Position, Position>()
         val gScore = mutableMapOf(start to 0)
 
-        openSet.add(Node(start, start.chebyshevTo(goal)))
+        openSet.add(Node(start, start.distanceTo(goal)))
 
         while (openSet.isNotEmpty()) {
             val current = openSet.poll()?.pos ?: break
@@ -52,7 +52,7 @@ object Pathfinding {
                 if (tentativeG < (gScore[neighbor] ?: Int.MAX_VALUE)) {
                     cameFrom[neighbor] = current
                     gScore[neighbor] = tentativeG
-                    val f = tentativeG + neighbor.chebyshevTo(goal)
+                    val f = tentativeG + neighbor.distanceTo(goal)
                     openSet.add(Node(neighbor, f))
                 }
             }
