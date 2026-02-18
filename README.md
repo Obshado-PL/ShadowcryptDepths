@@ -108,14 +108,41 @@ haptic/  → Vibration feedback
 
 ## Project Status
 
-This project is under active development. Current implementation progress:
+This project is under active development. Currently preparing for **Phase 2**.
 
-- [x] Phase 1: Project scaffolding, Gradle setup, theme, navigation, main menu
-- [ ] Phase 2: Core engine, dungeon generation, player movement, fog of war
-- [ ] Phase 3: Combat system, enemies, AI, XP/leveling
-- [ ] Phase 4: Items, inventory, loot generation
-- [ ] Phase 5: Multiple floors, bosses, class selection, UI polish
-- [ ] Phase 6: Meta-progression, audio, haptics, final polish
+### Development Phases
+
+- [x] **Phase 1 — Foundation** *(Complete)*
+  - Gradle project setup with version catalog
+  - Jetpack Compose + Material 3 dark theme (dungeon color palette, monospace typography)
+  - Type-safe navigation with animated screen transitions
+  - Main menu screen (New Run, Unlocks, Settings)
+  - ServiceLocator scaffolding for future services
+  - Edge-to-edge display, release signing config
+- [ ] **Phase 2 — Core Engine**
+  - Dungeon generation (BSP room-and-corridor algorithm)
+  - Grid-based player movement
+  - Fog of war (recursive shadowcasting)
+  - Canvas-based tile rendering
+- [ ] **Phase 3 — Combat & Enemies**
+  - Turn-based combat system
+  - Enemy types and AI behaviors
+  - XP and leveling
+- [ ] **Phase 4 — Items & Inventory**
+  - Loot generation with rarity tiers
+  - Equipment and consumables
+  - Inventory management screen
+- [ ] **Phase 5 — Floors & Bosses**
+  - Multi-floor dungeon progression (10 floors, 5 themes)
+  - Boss encounters (Floor 5 mini-boss, Floor 10 final boss)
+  - Class selection screen (4 classes)
+  - UI polish and game-over screen
+- [ ] **Phase 6 — Polish & Meta-Progression**
+  - Permanent unlock system
+  - Sound effects and background music
+  - Haptic feedback
+  - Settings screen (audio, accessibility)
+  - Final balancing and polish
 
 ## Privacy
 
