@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.shadowcrypt.game.data.model.UnlockCondition
 import com.shadowcrypt.game.engine.GameAction
 import com.shadowcrypt.game.engine.model.Tile
 import com.shadowcrypt.game.ui.theme.DungeonPurple80
@@ -152,6 +153,7 @@ fun GameScreen(
             is GameUiState.GameOver -> {
                 val titleText = if (state.won) "VICTORY" else "YOU HAVE FALLEN"
                 val titleColor = if (state.won) XpGold else HealthRed
+                val newUnlocks by viewModel.newUnlocks.collectAsStateWithLifecycle()
 
                 Box(
                     modifier = Modifier
@@ -199,6 +201,23 @@ fun GameScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )
+
+                        if (newUnlocks.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "NEW UNLOCKS!",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = XpGold
+                            )
+                            for (classId in newUnlocks) {
+                                val condition = UnlockCondition.entries.find { it.classId == classId }
+                                Text(
+                                    text = condition?.displayName ?: classId.replaceFirstChar { it.uppercase() },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = DungeonPurple80
+                                )
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(24.dp))
 

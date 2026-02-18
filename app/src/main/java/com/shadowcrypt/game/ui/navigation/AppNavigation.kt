@@ -15,6 +15,8 @@ import androidx.navigation.compose.rememberNavController
 import com.shadowcrypt.game.ui.classselect.ClassSelectScreen
 import com.shadowcrypt.game.ui.game.GameScreen
 import com.shadowcrypt.game.ui.mainmenu.MainMenuScreen
+import com.shadowcrypt.game.ui.settings.SettingsScreen
+import com.shadowcrypt.game.ui.unlocks.UnlocksScreen
 
 /** Duration for all screen transitions (400ms with smooth deceleration) */
 private const val NAV_ANIM_DURATION = 400
@@ -152,27 +154,17 @@ fun AppNavigation() {
 
         // ===== Settings Screen =====
         // Sound, haptics, and accessibility toggles.
-        // TODO: Phase 6 — implement SettingsScreen
         composable<SettingsRoute> {
-            MainMenuScreen(
-                onNewRun = {
-                    navController.popBackStack(MainMenuRoute, inclusive = false)
-                },
-                onSettings = {},
-                onUnlocks = {}
+            SettingsScreen(
+                onBack = { navController.popBackStack() }
             )
         }
 
         // ===== Unlocks Screen =====
         // Shows all permanent meta-progression unlocks.
-        // TODO: Phase 6 — implement UnlocksScreen
         composable<UnlocksRoute> {
-            MainMenuScreen(
-                onNewRun = {
-                    navController.popBackStack(MainMenuRoute, inclusive = false)
-                },
-                onSettings = {},
-                onUnlocks = {}
+            UnlocksScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }

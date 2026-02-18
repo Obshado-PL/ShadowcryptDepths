@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -26,7 +27,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.shadowcrypt.game.data.model.UnlockCondition
 import com.shadowcrypt.game.ui.theme.DungeonPurple80
 import com.shadowcrypt.game.ui.theme.GameBackground
 import com.shadowcrypt.game.ui.theme.HealthRed
@@ -34,6 +39,7 @@ import com.shadowcrypt.game.ui.theme.HudBackground
 import com.shadowcrypt.game.ui.theme.PlayerColor
 import com.shadowcrypt.game.ui.theme.RarityUncommon
 import com.shadowcrypt.game.ui.theme.TextSecondary
+import com.shadowcrypt.game.ui.theme.XpGold
 
 private data class ClassInfo(
     val id: String,
@@ -53,9 +59,11 @@ private val classes = listOf(
 
 @Composable
 fun ClassSelectScreen(
-    onClassSelected: (String) -> Unit
+    onClassSelected: (String) -> Unit,
+    viewModel: ClassSelectViewModel = viewModel()
 ) {
     var selectedId by remember { mutableStateOf<String?>(null) }
+    val unlockedClassIds by viewModel.unlockedClassIds.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -88,7 +96,12 @@ fun ClassSelectScreen(
 
             for (classInfo in classes) {
                 val isSelected = selectedId == classInfo.id
-                val borderColor = if (isSelected) DungeonPurple80 else TextSecondary.copy(alpha = 0.3f)
+                val isUnlocked = classInfo.id in unlockedClassIds
+                val borderColor = when {
+                    isSelected -> DungeonPurple80
+                    !isUnlocked -> TextSecondary.copy(alpha = 0.15f)
+                    else -> TextSecondary.copy(alpha = 0.3f)
+                }
 
                 Column(
                     modifier = Modifier
@@ -100,27 +113,49 @@ fun ClassSelectScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
                         .background(
-                            if (isSelected) DungeonPurple80.copy(alpha = 0.1f) else HudBackground,
+                            when {
+                                !isUnlocked -> HudBackground.copy(alpha = 0.5f)
+                                isSelected -> DungeonPurple80.copy(alpha = 0.1f)
+                                else -> HudBackground
+                            },
                             RoundedCornerShape(12.dp)
                         )
-                        .clickable {
-                            selectedId = classInfo.id
-                            onClassSelected(classInfo.id)
-                        }
+                        .then(
+                            if (isUnlocked) {
+                                Modifier.clickable {
+                                    selectedId = classInfo.id
+                                    onClassSelected(classInfo.id)
+                                }
+                            } else {
+                                Modifier
+                            }
+                        )
                         .padding(16.dp)
                 ) {
-                    Text(
-                        text = classInfo.name.uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = DungeonPurple80
-                    )
+                    val contentAlpha = if (isUnlocked) 1f else 0.5f
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = classInfo.name.uppercase(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (isUnlocked) DungeonPurple80 else TextSecondary.copy(alpha = 0.5f)
+                        )
+                        if (!isUnlocked) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "LOCKED",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = HealthRed.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
                         text = classInfo.description,
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
+                        color = TextSecondary.copy(alpha = contentAlpha)
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -129,9 +164,21 @@ fun ClassSelectScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        StatLabel("HP", classInfo.hp, HealthRed)
-                        StatLabel("ATK", classInfo.atk, PlayerColor)
-                        StatLabel("DEF", classInfo.def, RarityUncommon)
+                        StatLabel("HP", classInfo.hp, HealthRed.copy(alpha = contentAlpha))
+                        StatLabel("ATK", classInfo.atk, PlayerColor.copy(alpha = contentAlpha))
+                        StatLabel("DEF", classInfo.def, RarityUncommon.copy(alpha = contentAlpha))
+                    }
+
+                    if (!isUnlocked) {
+                        val condition = UnlockCondition.entries.find { it.classId == classInfo.id }
+                        if (condition != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Unlock: ${condition.description}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = XpGold.copy(alpha = 0.6f)
+                            )
+                        }
                     }
                 }
 
@@ -142,7 +189,7 @@ fun ClassSelectScreen(
 }
 
 @Composable
-private fun StatLabel(label: String, value: Int, color: androidx.compose.ui.graphics.Color) {
+private fun StatLabel(label: String, value: Int, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = "$label:",
