@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.shadowcrypt.game.ui.game.GameScreen
 import com.shadowcrypt.game.ui.mainmenu.MainMenuScreen
 
 /** Duration for all screen transitions (400ms with smooth deceleration) */
@@ -106,7 +107,6 @@ fun AppNavigation() {
         // ===== Game Screen =====
         // The main dungeon gameplay screen.
         // Enters with zoom-in for dramatic "entering the dungeon" effect.
-        // TODO: Phase 2 — implement GameScreen
         composable<GameRoute>(
             enterTransition = {
                 scaleIn(
@@ -121,13 +121,12 @@ fun AppNavigation() {
                 ) + fadeOut(animationSpec = tween(NAV_ANIM_DURATION, easing = FastOutSlowInEasing))
             }
         ) {
-            // Placeholder: navigate back to menu for now
-            MainMenuScreen(
-                onNewRun = {
-                    navController.popBackStack(MainMenuRoute, inclusive = false)
-                },
-                onSettings = {},
-                onUnlocks = {}
+            GameScreen(
+                onGameOver = {
+                    navController.navigate(MainMenuRoute) {
+                        popUpTo(MainMenuRoute) { inclusive = true }
+                    }
+                }
             )
         }
 
