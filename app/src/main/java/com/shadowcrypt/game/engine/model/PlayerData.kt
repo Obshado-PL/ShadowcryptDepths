@@ -11,5 +11,15 @@ data class PlayerData(
     val xpToNextLevel: Int = 50,
     val classId: String,
     val floorNumber: Int,
-    val enemiesKilled: Int = 0
-)
+    val enemiesKilled: Int = 0,
+    val inventory: InventoryData = InventoryData()
+) {
+    val effectiveAttack: Int
+        get() = attack + inventory.equipment.totalAttackBonus
+
+    val effectiveDefense: Int
+        get() = defense + inventory.equipment.totalDefenseBonus
+
+    val effectiveMaxHp: Int
+        get() = maxHp + inventory.equipment.totalMaxHpBonus
+}

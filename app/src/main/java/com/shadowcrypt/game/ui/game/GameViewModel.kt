@@ -22,6 +22,9 @@ class GameViewModel(
     private val _uiState = MutableStateFlow<GameUiState>(GameUiState.Loading)
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
+    private val _isInventoryOpen = MutableStateFlow(false)
+    val isInventoryOpen: StateFlow<Boolean> = _isInventoryOpen.asStateFlow()
+
     init {
         viewModelScope.launch(Dispatchers.Default) {
             val initialState = GameEngine.createInitialState(classId, seed)
@@ -57,5 +60,13 @@ class GameViewModel(
 
             _uiState.value = GameUiState.Playing(newState)
         }
+    }
+
+    fun toggleInventory() {
+        _isInventoryOpen.value = !_isInventoryOpen.value
+    }
+
+    fun closeInventory() {
+        _isInventoryOpen.value = false
     }
 }

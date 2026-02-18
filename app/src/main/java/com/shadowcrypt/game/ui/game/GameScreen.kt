@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -27,6 +29,7 @@ import com.shadowcrypt.game.engine.model.Tile
 import com.shadowcrypt.game.ui.theme.DungeonPurple80
 import com.shadowcrypt.game.ui.theme.GameBackground
 import com.shadowcrypt.game.ui.theme.HealthRed
+import com.shadowcrypt.game.ui.theme.ItemColor
 import com.shadowcrypt.game.ui.theme.StairsColor
 import com.shadowcrypt.game.ui.theme.TextPrimary
 import com.shadowcrypt.game.ui.theme.TextSecondary
@@ -38,6 +41,7 @@ fun GameScreen(
     viewModel: GameViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isInventoryOpen by viewModel.isInventoryOpen.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -74,12 +78,14 @@ fun GameScreen(
                 GameHud(
                     floorNumber = gameState.player.floorNumber,
                     hp = gameState.player.hp,
-                    maxHp = gameState.player.maxHp,
+                    maxHp = gameState.player.effectiveMaxHp,
                     level = gameState.player.level,
                     xp = gameState.player.xp,
                     xpToNextLevel = gameState.player.xpToNextLevel,
                     classId = gameState.player.classId,
                     message = gameState.message,
+                    effectiveAttack = gameState.player.effectiveAttack,
+                    effectiveDefense = gameState.player.effectiveDefense,
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
 
@@ -92,6 +98,40 @@ fun GameScreen(
                         .align(Alignment.BottomEnd)
                         .padding(16.dp)
                 )
+
+                // Inventory button (bottom-left)
+                Button(
+                    onClick = { viewModel.toggleInventory() },
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp)
+                        .size(56.dp),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GameBackground.copy(alpha = 0.7f),
+                        contentColor = ItemColor
+                    )
+                ) {
+                    Text(
+                        text = "BAG",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+
+                // Inventory overlay
+                if (isInventoryOpen) {
+                    InventoryOverlay(
+                        inventory = gameState.player.inventory,
+                        onEquip = { viewModel.onAction(GameAction.EquipItem(it)) },
+                        onUse = { viewModel.onAction(GameAction.UseItem(it)) },
+                        onDrop = {
+                            viewModel.onAction(GameAction.DropItem(it))
+                            viewModel.closeInventory()
+                        },
+                        onUnequip = { viewModel.onAction(GameAction.UnequipItem(it)) },
+                        onClose = { viewModel.closeInventory() }
+                    )
+                }
             }
 
             is GameUiState.Descending -> {

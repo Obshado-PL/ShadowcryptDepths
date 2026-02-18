@@ -8,6 +8,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import com.shadowcrypt.game.engine.model.GameState
+import com.shadowcrypt.game.engine.model.Rarity
 import com.shadowcrypt.game.engine.model.Tile
 import com.shadowcrypt.game.engine.model.Visibility
 import com.shadowcrypt.game.ui.theme.CavernAccent
@@ -26,6 +27,11 @@ import com.shadowcrypt.game.ui.theme.InfernoAccent
 import com.shadowcrypt.game.ui.theme.InfernoFloor
 import com.shadowcrypt.game.ui.theme.InfernoWall
 import com.shadowcrypt.game.ui.theme.PlayerColor
+import com.shadowcrypt.game.ui.theme.RarityCommon
+import com.shadowcrypt.game.ui.theme.RarityEpic
+import com.shadowcrypt.game.ui.theme.RarityLegendary
+import com.shadowcrypt.game.ui.theme.RarityRare
+import com.shadowcrypt.game.ui.theme.RarityUncommon
 import com.shadowcrypt.game.ui.theme.SewerAccent
 import com.shadowcrypt.game.ui.theme.SewerFloor
 import com.shadowcrypt.game.ui.theme.SewerWall
@@ -80,7 +86,24 @@ fun DungeonCanvas(
                     drawRect(color, Offset(left, top), tileRect)
                 }
 
-                // Layer 2: Enemies (visible only)
+                // Layer 2: Ground items (visible only)
+                if (vis == Visibility.VISIBLE) {
+                    val groundItem = gameState.groundItems.find {
+                        it.second.x == worldX && it.second.y == worldY
+                    }
+                    if (groundItem != null) {
+                        val itemDrawColor = rarityToColor(groundItem.first.rarity)
+                        val center = Offset(left + tileSize / 2, top + tileSize / 2)
+                        val itemSize = tileSize * 0.2f
+                        drawRect(
+                            color = itemDrawColor,
+                            topLeft = Offset(center.x - itemSize, center.y - itemSize),
+                            size = Size(itemSize * 2, itemSize * 2)
+                        )
+                    }
+                }
+
+                // Layer 3: Enemies (visible only)
                 if (vis == Visibility.VISIBLE) {
                     val enemy = gameState.enemies.find {
                         it.position.x == worldX && it.position.y == worldY
@@ -101,7 +124,7 @@ fun DungeonCanvas(
                     }
                 }
 
-                // Layer 3: Player
+                // Layer 4: Player
                 if (vis == Visibility.VISIBLE &&
                     worldX == player.position.x &&
                     worldY == player.position.y
@@ -113,7 +136,7 @@ fun DungeonCanvas(
                     )
                 }
 
-                // Layer 4: Fog overlay
+                // Layer 5: Fog overlay
                 when (vis) {
                     Visibility.UNEXPLORED -> drawRect(FogUnexplored, Offset(left, top), tileRect)
                     Visibility.EXPLORED -> drawRect(FogExplored, Offset(left, top), tileRect)
@@ -144,6 +167,14 @@ private fun tileColor(
         Tile.STAIRS_DOWN -> StairsColor
         Tile.STAIRS_UP -> themeAccent
     }
+}
+
+private fun rarityToColor(rarity: Rarity): Color = when (rarity) {
+    Rarity.COMMON -> RarityCommon
+    Rarity.UNCOMMON -> RarityUncommon
+    Rarity.RARE -> RarityRare
+    Rarity.EPIC -> RarityEpic
+    Rarity.LEGENDARY -> RarityLegendary
 }
 
 private fun floorThemeColors(floorNumber: Int): Triple<Color, Color, Color> {

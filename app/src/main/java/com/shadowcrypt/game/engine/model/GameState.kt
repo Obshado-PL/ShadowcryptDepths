@@ -8,5 +8,7 @@ data class GameState(
     val turnCount: Int,
     val seed: Long,
     val message: String? = null,
-    val isPlayerDead: Boolean = false
+    val isPlayerDead: Boolean = false,
+    val groundItems: List<Pair<ItemData, Position>> = emptyList(),
+    val nextItemId: Int = 0
 )

@@ -33,6 +33,8 @@ import com.shadowcrypt.game.ui.theme.GameBackground
 import com.shadowcrypt.game.ui.theme.HealthRed
 import com.shadowcrypt.game.ui.theme.HealthRedDark
 import com.shadowcrypt.game.ui.theme.HudBackground
+import com.shadowcrypt.game.ui.theme.RarityEpic
+import com.shadowcrypt.game.ui.theme.RarityRare
 import com.shadowcrypt.game.ui.theme.StairsColor
 import com.shadowcrypt.game.ui.theme.TextPrimary
 import com.shadowcrypt.game.ui.theme.TextSecondary
@@ -55,6 +57,8 @@ fun GameHud(
     xpToNextLevel: Int,
     classId: String,
     message: String?,
+    effectiveAttack: Int = 0,
+    effectiveDefense: Int = 0,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -126,6 +130,16 @@ fun GameHud(
                     )
                 }
             }
+            Text(
+                text = "ATK:$effectiveAttack",
+                style = MaterialTheme.typography.labelSmall,
+                color = RarityEpic
+            )
+            Text(
+                text = "DEF:$effectiveDefense",
+                style = MaterialTheme.typography.labelSmall,
+                color = RarityRare
+            )
         }
         if (message != null) {
             Text(

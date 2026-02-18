@@ -11,14 +11,14 @@ object CombatEngine {
     }
 
     fun playerAttacksEnemy(player: PlayerData, enemy: EnemyData): Triple<EnemyData, Int, Boolean> {
-        val damage = calculateDamage(player.attack, enemy.defense)
+        val damage = calculateDamage(player.effectiveAttack, enemy.defense)
         val newHp = (enemy.hp - damage).coerceAtLeast(0)
         val updatedEnemy = enemy.copy(hp = newHp)
         return Triple(updatedEnemy, damage, newHp <= 0)
     }
 
     fun enemyAttacksPlayer(enemy: EnemyData, player: PlayerData): Triple<PlayerData, Int, Boolean> {
-        val damage = calculateDamage(enemy.attack, player.defense)
+        val damage = calculateDamage(enemy.attack, player.effectiveDefense)
         val newHp = (player.hp - damage).coerceAtLeast(0)
         val updatedPlayer = player.copy(hp = newHp)
         return Triple(updatedPlayer, damage, newHp <= 0)
@@ -29,13 +29,14 @@ object CombatEngine {
             val newLevel = player.level + 1
             val remainingXp = player.xp - player.xpToNextLevel
             val newMaxHp = player.maxHp + 5
+            val effectiveMax = newMaxHp + player.inventory.equipment.totalMaxHpBonus
             return Pair(
                 player.copy(
                     level = newLevel,
                     xp = remainingXp,
                     xpToNextLevel = xpForLevel(newLevel + 1),
                     maxHp = newMaxHp,
-                    hp = newMaxHp,
+                    hp = effectiveMax,
                     attack = player.attack + 1,
                     defense = player.defense + 1
                 ),
