@@ -27,19 +27,38 @@ The project follows clean architecture principles with a pure Kotlin game engine
 
 ```
 app/src/main/java/com/shadowcrypt/game/
-├── MainActivity.kt       → Single-activity entry point with edge-to-edge display
-├── ShadowcryptApp.kt     → Application class + ServiceLocator for shared services
+├── MainActivity.kt           → Single-activity entry point with edge-to-edge display
+├── ShadowcryptApp.kt         → Application class + ServiceLocator for shared services
+├── engine/
+│   ├── GameEngine.kt          → Core game loop: state transitions, movement, combat integration
+│   ├── GameAction.kt          → Sealed interface for player actions (Move, Wait, Descend)
+│   ├── ai/
+│   │   └── EnemyAi.kt         → Enemy turn processing: aggressive chase, patrol wander
+│   ├── combat/
+│   │   └── CombatEngine.kt    → Damage formula, attack resolution, XP/level-up math
+│   ├── dungeon/
+│   │   ├── BspNode.kt         → BSP tree node for dungeon space partitioning
+│   │   ├── DungeonGenerator.kt→ Procedural dungeon generation (rooms, corridors, doors, stairs)
+│   │   ├── EnemySpawner.kt    → Floor-scaled enemy placement per room
+│   │   └── Room.kt            → Room data class with geometry helpers
+│   ├── fov/
+│   │   └── Shadowcaster.kt    → 8-octant recursive shadowcasting for fog of war
+│   └── model/                 → Immutable data classes (Position, Direction, Tile, GameState, etc.)
 └── ui/
-    ├── mainmenu/          → Main menu screen (title, new run, unlocks, settings)
-    ├── navigation/        → Type-safe navigation routes and screen transitions
-    └── theme/             → Dark dungeon color palette, monospace typography, Material 3 theme
+    ├── game/
+    │   ├── DungeonCanvas.kt   → Canvas-based tile/enemy/player rendering with camera system
+    │   ├── DpadOverlay.kt     → D-pad controls, GameHud (HP/XP bars), SwipeDetector
+    │   ├── GameScreen.kt      → Main game screen with loading, playing, descending, game-over states
+    │   ├── GameUiState.kt     → Sealed UI state: Loading, Playing, Descending, GameOver
+    │   └── GameViewModel.kt   → Bridges engine to UI via StateFlow, handles death transitions
+    ├── mainmenu/              → Main menu screen (title, new run, unlocks, settings)
+    ├── navigation/            → Type-safe navigation routes and screen transitions
+    └── theme/                 → Dark dungeon color palette, monospace typography, Material 3 theme
 ```
 
 ### Planned Structure (upcoming phases)
 
 ```
-engine/  → Pure Kotlin game logic (dungeon gen, combat, AI, FOV, pathfinding)
-model/   → Immutable data classes (no Android deps)
 data/    → Android persistence layer (DataStore repositories)
 audio/   → Sound management (SoundPool + MediaPlayer)
 haptic/  → Vibration feedback
@@ -87,12 +106,12 @@ haptic/  → Vibration feedback
 
 ### Character Classes
 
-| Class   | HP | ATK | DEF | MAG | SPD | Unlock Condition  |
-|---------|-----|-----|-----|-----|-----|-------------------|
-| Warrior | 60  | 10  | 8   | 2   | 8   | Available at start |
-| Rogue   | 40  | 8   | 4   | 3   | 14  | Complete 5 runs    |
-| Mage    | 35  | 3   | 3   | 12  | 9   | Complete 10 runs   |
-| Cleric  | 50  | 6   | 6   | 8   | 7   | Reach Floor 5      |
+| Class   | HP  | ATK | DEF | Unlock Condition   |
+|---------|-----|-----|-----|--------------------|
+| Warrior | 120 | 8   | 5   | Available at start |
+| Rogue   | 80  | 12  | 2   | Complete 5 runs    |
+| Mage    | 70  | 14  | 1   | Complete 10 runs   |
+| Cleric  | 100 | 7   | 4   | Reach Floor 5      |
 
 ### Dungeon Themes
 
@@ -108,7 +127,7 @@ haptic/  → Vibration feedback
 
 ## Project Status
 
-This project is under active development. Currently preparing for **Phase 2**.
+This project is under active development. Currently preparing for **Phase 4**.
 
 ### Development Phases
 
@@ -119,24 +138,29 @@ This project is under active development. Currently preparing for **Phase 2**.
   - Main menu screen (New Run, Unlocks, Settings)
   - ServiceLocator scaffolding for future services
   - Edge-to-edge display, release signing config
-- [ ] **Phase 2 — Core Engine**
-  - Dungeon generation (BSP room-and-corridor algorithm)
-  - Grid-based player movement
-  - Fog of war (recursive shadowcasting)
-  - Canvas-based tile rendering
-- [ ] **Phase 3 — Combat & Enemies**
-  - Turn-based combat system
-  - Enemy types and AI behaviors
-  - XP and leveling
+- [x] **Phase 2 — Core Engine** *(Complete)*
+  - BSP dungeon generation (rooms, L-shaped corridors, doors, stairs)
+  - Grid-based player movement with swipe and d-pad controls
+  - Fog of war via 8-octant recursive shadowcasting (radius 8)
+  - Canvas-based tile rendering with player-centered camera (15-tile viewport)
+  - 5 floor themes with distinct color palettes (Crypt, Sewers, Caverns, Inferno, Void)
+  - Floor descent with transition overlay
+- [x] **Phase 3 — Combat & Enemies** *(Complete)*
+  - Bump-to-attack combat with `max(1, atk - def/2)` damage formula
+  - 10 enemy types across 5 floor themes with floor-scaled stats
+  - Enemy AI: aggressive (greedy Manhattan chase) and patrol (random wander)
+  - XP/leveling system (+5 HP, +1 ATK, +1 DEF per level, full heal on level-up)
+  - 4 class-specific base stat profiles (Warrior, Rogue, Mage, Cleric)
+  - Game over screen with run statistics (floor reached, enemies slain, level, turns)
+  - Enemy rendering as colored diamonds (red normal, purple bosses)
 - [ ] **Phase 4 — Items & Inventory**
   - Loot generation with rarity tiers
   - Equipment and consumables
   - Inventory management screen
 - [ ] **Phase 5 — Floors & Bosses**
-  - Multi-floor dungeon progression (10 floors, 5 themes)
   - Boss encounters (Floor 5 mini-boss, Floor 10 final boss)
   - Class selection screen (4 classes)
-  - UI polish and game-over screen
+  - UI polish
 - [ ] **Phase 6 — Polish & Meta-Progression**
   - Permanent unlock system
   - Sound effects and background music
