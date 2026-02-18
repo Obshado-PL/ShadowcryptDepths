@@ -56,6 +56,8 @@ app/src/main/java/com/shadowcrypt/game/
     │   ├── GameUiState.kt     → Sealed UI state: Loading, Playing, Descending, GameOver
     │   ├── GameViewModel.kt   → Bridges engine to UI via StateFlow, handles death/inventory transitions
     │   └── InventoryOverlay.kt→ Modal inventory UI: equipment slots, item grid, detail panel
+    ├── classselect/
+    │   └── ClassSelectScreen.kt → Class selection: 4 class cards with stats and descriptions
     ├── mainmenu/              → Main menu screen (title, new run, unlocks, settings)
     ├── navigation/            → Type-safe navigation routes and screen transitions
     └── theme/                 → Dark dungeon color palette, monospace typography, Material 3 theme
@@ -132,7 +134,7 @@ haptic/  → Vibration feedback
 
 ## Project Status
 
-This project is under active development. Currently preparing for **Phase 5**.
+This project is under active development. Currently preparing for **Phase 6**.
 
 ### Development Phases
 
@@ -168,10 +170,13 @@ This project is under active development. Currently preparing for **Phase 5**.
   - Inventory overlay UI: equipment slots, 4x4 item grid, detail panel, equip/use/drop actions
   - Ground item rendering as rarity-colored squares on dungeon canvas
   - ATK/DEF effective stats displayed in HUD
-- [ ] **Phase 5 — Floors & Bosses**
-  - Boss encounters (Floor 5 mini-boss, Floor 10 final boss)
-  - Class selection screen (4 classes)
-  - UI polish
+- [x] **Phase 5 — Floors & Bosses** *(Complete)*
+  - Boss encounters: Bone Warden (floor 5) and Shadowcrypt Lord (floor 10) with guaranteed Legendary drops
+  - Boss rendering: larger diamond with inner white glow, boss-specific AI detection ranges
+  - Floor 10 cap: no stairs down, victory condition on final boss kill
+  - Victory screen ("VICTORY" in gold) vs defeat screen ("YOU HAVE FALLEN" in red)
+  - Class selection screen: 4 class cards with HP/ATK/DEF stats and descriptions
+  - Halved regular enemy count on boss floors, end room reserved for boss
 - [ ] **Phase 6 — Polish & Meta-Progression**
   - Permanent unlock system
   - Sound effects and background music
