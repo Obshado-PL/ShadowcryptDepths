@@ -31,7 +31,7 @@ app/src/main/java/com/shadowcrypt/game/
 ├── ShadowcryptApp.kt         → Application class + ServiceLocator for shared services
 ├── engine/
 │   ├── GameEngine.kt          → Core game loop: state transitions, movement, combat integration
-│   ├── GameAction.kt          → Sealed interface for player actions (Move, Wait, Descend)
+│   ├── GameAction.kt          → Sealed interface for player actions (Move, Wait, Descend, item actions)
 │   ├── ai/
 │   │   └── EnemyAi.kt         → Enemy turn processing: aggressive chase, patrol wander
 │   ├── combat/
@@ -43,14 +43,19 @@ app/src/main/java/com/shadowcrypt/game/
 │   │   └── Room.kt            → Room data class with geometry helpers
 │   ├── fov/
 │   │   └── Shadowcaster.kt    → 8-octant recursive shadowcasting for fog of war
-│   └── model/                 → Immutable data classes (Position, Direction, Tile, GameState, etc.)
+│   ├── item/
+│   │   ├── ItemGenerator.kt   → Rarity rolling, stat rolling, item creation, enemy drop rolls
+│   │   ├── ItemNames.kt       → Thematic name tables per type and rarity tier
+│   │   └── ItemSpawner.kt     → Ground item placement in dungeon rooms
+│   └── model/                 → Immutable data classes (Position, Direction, Tile, GameState, ItemData, etc.)
 └── ui/
     ├── game/
     │   ├── DungeonCanvas.kt   → Canvas-based tile/enemy/player rendering with camera system
-    │   ├── DpadOverlay.kt     → D-pad controls, GameHud (HP/XP bars), SwipeDetector
+    │   ├── DpadOverlay.kt     → D-pad controls, GameHud (HP/XP/ATK/DEF bars), SwipeDetector
     │   ├── GameScreen.kt      → Main game screen with loading, playing, descending, game-over states
     │   ├── GameUiState.kt     → Sealed UI state: Loading, Playing, Descending, GameOver
-    │   └── GameViewModel.kt   → Bridges engine to UI via StateFlow, handles death transitions
+    │   ├── GameViewModel.kt   → Bridges engine to UI via StateFlow, handles death/inventory transitions
+    │   └── InventoryOverlay.kt→ Modal inventory UI: equipment slots, item grid, detail panel
     ├── mainmenu/              → Main menu screen (title, new run, unlocks, settings)
     ├── navigation/            → Type-safe navigation routes and screen transitions
     └── theme/                 → Dark dungeon color palette, monospace typography, Material 3 theme
@@ -127,7 +132,7 @@ haptic/  → Vibration feedback
 
 ## Project Status
 
-This project is under active development. Currently preparing for **Phase 4**.
+This project is under active development. Currently preparing for **Phase 5**.
 
 ### Development Phases
 
@@ -153,10 +158,16 @@ This project is under active development. Currently preparing for **Phase 4**.
   - 4 class-specific base stat profiles (Warrior, Rogue, Mage, Cleric)
   - Game over screen with run statistics (floor reached, enemies slain, level, turns)
   - Enemy rendering as colored diamonds (red normal, purple bosses)
-- [ ] **Phase 4 — Items & Inventory**
-  - Loot generation with rarity tiers
-  - Equipment and consumables
-  - Inventory management screen
+- [x] **Phase 4 — Items & Inventory** *(Complete)*
+  - 5 item types (weapon, armor, accessory, potion, scroll) across 5 rarity tiers
+  - Floor-scaled loot generation with thematic names (dark fantasy)
+  - Equipment system: 3 slots (weapon, armor, accessory) with stat bonuses affecting combat
+  - Consumables: health potions (heal 15-999 HP) and damage scrolls (AoE, 2-5 tile radius)
+  - Auto-pickup on walk with inventory full warning
+  - Enemy item drops (35% base, higher for bosses)
+  - Inventory overlay UI: equipment slots, 4x4 item grid, detail panel, equip/use/drop actions
+  - Ground item rendering as rarity-colored squares on dungeon canvas
+  - ATK/DEF effective stats displayed in HUD
 - [ ] **Phase 5 — Floors & Bosses**
   - Boss encounters (Floor 5 mini-boss, Floor 10 final boss)
   - Class selection screen (4 classes)
