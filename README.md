@@ -27,8 +27,22 @@ The project follows clean architecture principles with a pure Kotlin game engine
 
 ```
 app/src/main/java/com/shadowcrypt/game/
-├── MainActivity.kt           → Single-activity entry point with edge-to-edge display
-├── ShadowcryptApp.kt         → Application class + ServiceLocator for shared services
+├── MainActivity.kt           → Single-activity entry point with sound lifecycle hooks
+├── ShadowcryptApp.kt         → Application class + ServiceLocator (4 services + settings sync)
+├── data/
+│   ├── model/
+│   │   ├── GameSettings.kt       → Sound/music/haptics toggle state
+│   │   ├── MetaProgress.kt       → Run stats, best floor, unlocked class IDs
+│   │   └── UnlockCondition.kt    → 4 unlock conditions with check lambdas
+│   ├── SettingsDataStore.kt      → DataStore Preferences wrapper for settings
+│   ├── MetaProgressDataStore.kt  → DataStore Preferences wrapper for meta-progress
+│   ├── SettingsRepository.kt     → Toggle methods over settings DataStore
+│   └── MetaProgressRepository.kt → Run recording, unlock evaluation, atomic writes
+├── haptic/
+│   ├── HapticEvent.kt            → 8 vibration events with timing/amplitude patterns
+│   └── HapticManager.kt          → Vibrator API wrapper (API 31+ and fallback)
+├── sound/
+│   └── SoundManager.kt           → SoundPool + MediaPlayer framework (silent no-ops, no assets)
 ├── engine/
 │   ├── GameEngine.kt          → Core game loop: state transitions, movement, combat integration
 │   ├── GameAction.kt          → Sealed interface for player actions (Move, Wait, Descend, item actions)
@@ -57,18 +71,17 @@ app/src/main/java/com/shadowcrypt/game/
     │   ├── GameViewModel.kt   → Bridges engine to UI via StateFlow, handles death/inventory transitions
     │   └── InventoryOverlay.kt→ Modal inventory UI: equipment slots, item grid, detail panel
     ├── classselect/
-    │   └── ClassSelectScreen.kt → Class selection: 4 class cards with stats and descriptions
+    │   ├── ClassSelectScreen.kt  → Class selection: 4 class cards with lock/unlock gating
+    │   └── ClassSelectViewModel.kt → Exposes unlocked class IDs from meta-progression
+    ├── settings/
+    │   ├── SettingsScreen.kt     → Sound, music, and haptics toggle switches
+    │   └── SettingsViewModel.kt  → Settings state + toggle methods via repository
+    ├── unlocks/
+    │   ├── UnlocksScreen.kt      → Run stats summary + class unlock status cards
+    │   └── UnlocksViewModel.kt   → Meta-progress state from repository
     ├── mainmenu/              → Main menu screen (title, new run, unlocks, settings)
     ├── navigation/            → Type-safe navigation routes and screen transitions
     └── theme/                 → Dark dungeon color palette, monospace typography, Material 3 theme
-```
-
-### Planned Structure (upcoming phases)
-
-```
-data/    → Android persistence layer (DataStore repositories)
-audio/   → Sound management (SoundPool + MediaPlayer)
-haptic/  → Vibration feedback
 ```
 
 ### Design Patterns
@@ -134,7 +147,7 @@ haptic/  → Vibration feedback
 
 ## Project Status
 
-This project is under active development. Currently preparing for **Phase 6**.
+This project is under active development. All 6 core phases are **complete**.
 
 ### Development Phases
 
@@ -177,12 +190,14 @@ This project is under active development. Currently preparing for **Phase 6**.
   - Victory screen ("VICTORY" in gold) vs defeat screen ("YOU HAVE FALLEN" in red)
   - Class selection screen: 4 class cards with HP/ATK/DEF stats and descriptions
   - Halved regular enemy count on boss floors, end room reserved for boss
-- [ ] **Phase 6 — Polish & Meta-Progression**
-  - Permanent unlock system
-  - Sound effects and background music
-  - Haptic feedback
-  - Settings screen (audio, accessibility)
-  - Final balancing and polish
+- [x] **Phase 6 — Polish & Meta-Progression** *(Complete)*
+  - DataStore Preferences persistence for settings (3 toggles) and meta-progress (run stats, unlocks)
+  - Meta-progression: 4 unlock conditions evaluated atomically on run completion, newly unlocked classes displayed on game over
+  - Class select lock/unlock gating: locked classes grayed out with condition text, unlocked classes selectable
+  - Settings screen: sound effects, background music, and haptic feedback toggles with live sync to managers
+  - Unlocks screen: run stats summary + 4 class cards with LOCKED/UNLOCKED status
+  - Haptic feedback: 8 event-specific vibration patterns triggered via ViewModel state-diffing
+  - Sound infrastructure: SoundPool (SFX) + MediaPlayer (BGM) framework with lifecycle hooks (silent no-ops until assets added)
 
 ## Privacy
 
