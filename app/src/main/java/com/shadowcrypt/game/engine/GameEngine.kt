@@ -85,7 +85,7 @@ object GameEngine {
 
     fun processAction(state: GameState, action: GameAction): GameState {
         if (state.isPlayerDead || state.isVictorious) return state
-        return when (action) {
+        val result = when (action) {
             is GameAction.Move -> handleMove(state, action.direction)
             is GameAction.Wait -> handleWait(state)
             is GameAction.DescendStairs -> handleDescend(state)
@@ -93,6 +93,12 @@ object GameEngine {
             is GameAction.EquipItem -> handleEquipItem(state, action.itemId)
             is GameAction.UnequipItem -> handleUnequipItem(state, action.slot)
             is GameAction.DropItem -> handleDropItem(state, action.itemId)
+        }
+        // Append non-null messages to the combat log
+        return if (result.message != null && result.message != state.message) {
+            result.appendLog("[T${result.turnCount}] ${result.message}")
+        } else {
+            result
         }
     }
 

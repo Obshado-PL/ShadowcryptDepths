@@ -59,6 +59,7 @@ fun GameHud(
     message: String?,
     effectiveAttack: Int = 0,
     effectiveDefense: Int = 0,
+    turnCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -76,6 +77,11 @@ fun GameHud(
                 text = "F$floorNumber",
                 style = MaterialTheme.typography.bodySmall,
                 color = DungeonAmber80
+            )
+            Text(
+                text = "T$turnCount",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
             )
             Text(
                 text = "Lv$level",

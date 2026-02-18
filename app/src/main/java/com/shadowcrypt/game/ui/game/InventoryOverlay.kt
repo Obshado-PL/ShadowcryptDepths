@@ -45,6 +45,7 @@ import com.shadowcrypt.game.ui.theme.RarityEpic
 import com.shadowcrypt.game.ui.theme.RarityLegendary
 import com.shadowcrypt.game.ui.theme.RarityRare
 import com.shadowcrypt.game.ui.theme.RarityUncommon
+import com.shadowcrypt.game.ui.theme.HealthRed
 import com.shadowcrypt.game.ui.theme.TextPrimary
 import com.shadowcrypt.game.ui.theme.TextSecondary
 
@@ -189,13 +190,64 @@ fun InventoryOverlay(
                         )
                     }
 
+                    // Stat comparison with currently equipped item
+                    val isEquipment = item.type in listOf(
+                        ItemType.WEAPON, ItemType.ARMOR, ItemType.ACCESSORY
+                    )
+                    if (isEquipment) {
+                        val currentEquipped = when (item.type) {
+                            ItemType.WEAPON -> inventory.equipment.weapon
+                            ItemType.ARMOR -> inventory.equipment.armor
+                            ItemType.ACCESSORY -> inventory.equipment.accessory
+                            else -> null
+                        }
+                        val atkDelta = item.attackBonus - (currentEquipped?.attackBonus ?: 0)
+                        val defDelta = item.defenseBonus - (currentEquipped?.defenseBonus ?: 0)
+                        val hpDelta = item.maxHpBonus - (currentEquipped?.maxHpBonus ?: 0)
+
+                        if (atkDelta != 0 || defDelta != 0 || hpDelta != 0) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                val vsLabel = if (currentEquipped != null) "vs ${currentEquipped.name.take(10)}" else "vs empty"
+                                Text(
+                                    text = vsLabel,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextSecondary
+                                )
+                                if (atkDelta != 0) {
+                                    val sign = if (atkDelta > 0) "+" else ""
+                                    Text(
+                                        text = "${sign}${atkDelta} ATK",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (atkDelta > 0) RarityUncommon else HealthRed
+                                    )
+                                }
+                                if (defDelta != 0) {
+                                    val sign = if (defDelta > 0) "+" else ""
+                                    Text(
+                                        text = "${sign}${defDelta} DEF",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (defDelta > 0) RarityUncommon else HealthRed
+                                    )
+                                }
+                                if (hpDelta != 0) {
+                                    val sign = if (hpDelta > 0) "+" else ""
+                                    Text(
+                                        text = "${sign}${hpDelta} HP",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (hpDelta > 0) RarityUncommon else HealthRed
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Action buttons
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        val isEquipment = item.type in listOf(
-                            ItemType.WEAPON, ItemType.ARMOR, ItemType.ACCESSORY
-                        )
                         val isConsumable = item.type in listOf(
                             ItemType.POTION, ItemType.SCROLL
                         )
