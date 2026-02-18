@@ -6,18 +6,23 @@ A turn-based roguelike dungeon crawler for Android, built with Kotlin and Jetpac
 
 Descend into the Shadowcrypt — a procedurally generated dungeon filled with monsters, traps, and treasure. Each run is unique with randomized dungeon layouts, enemy placements, and loot drops. Death is permanent, but your legacy lives on through meta-progression unlocks that make future runs stronger.
 
-### Planned Features
+### Features
 
 - **Procedurally Generated Dungeons** — Every run creates a unique dungeon using BSP (Binary Space Partitioning) room-and-corridor generation
 - **Turn-Based Tactical Combat** — Move and attack on a grid. Every action matters when enemies close in from all sides
 - **10 Dungeon Floors** across 5 themes: Crypt, Sewers, Caverns, Inferno, and Void
-- **4 Character Classes** — Warrior, Rogue, Mage, and Cleric, each with unique abilities and playstyles
-- **Permadeath with Meta-Progression** — Death resets your run, but permanent unlocks carry over (new classes, stat bonuses)
+- **4 Character Classes** — Warrior, Rogue, Mage, and Cleric, unlocked through meta-progression
+- **Permadeath with Meta-Progression** — Death resets your run, but permanent unlocks carry over (new classes)
 - **Full Loot System** — Weapons, armor, potions, scrolls, and accessories across 5 rarity tiers (Common to Legendary)
-- **20+ Enemy Types** with distinct AI behaviors (aggressive, patrol, ranged, ambush, support, boss)
-- **Boss Encounters** — Mini-boss on Floor 5 and Final Boss on Floor 10 with multi-phase mechanics
+- **12 Enemy Types** with aggressive and patrol AI behaviors, plus 2 boss encounters
+- **Boss Encounters** — Bone Warden on Floor 5 and Shadowcrypt Lord on Floor 10 with guaranteed Legendary drops
 - **Fog of War** — Explore the unknown with recursive shadowcasting field-of-view
-- **Pixel Art Style** — Retro 16-bit inspired visuals rendered via Compose Canvas
+- **Visual Feedback** — Floating damage numbers, screen shake, damage flash, loot pickup particles, tile animations
+- **Minimap** — Translucent overview showing explored rooms, enemies, and stairs
+- **Combat Log** — Scrollable message history of the last 30 events
+- **Enemy Inspect** — Long-press enemies to view name, HP, ATK, and DEF
+- **Inventory Stat Comparison** — Equipment shows stat deltas vs currently equipped gear
+- **Canvas Rendering** — Dungeon tiles drawn as colored shapes on Compose Canvas with themed animations
 
 ## Architecture
 
@@ -64,12 +69,13 @@ app/src/main/java/com/shadowcrypt/game/
 │   └── model/                 → Immutable data classes (Position, Direction, Tile, GameState, ItemData, etc.)
 └── ui/
     ├── game/
-    │   ├── DungeonCanvas.kt   → Canvas-based tile/enemy/player rendering with camera system
-    │   ├── DpadOverlay.kt     → D-pad controls, GameHud (HP/XP/ATK/DEF bars), SwipeDetector
-    │   ├── GameScreen.kt      → Main game screen with loading, playing, descending, game-over states
+    │   ├── DungeonCanvas.kt   → Canvas rendering: tiles, enemies (HP bars), items, floating numbers, particles
+    │   ├── DpadOverlay.kt     → D-pad controls, GameHud (HP/XP/ATK/DEF/turn counter), SwipeDetector
+    │   ├── GameScreen.kt      → Game screen: minimap, combat log, enemy inspect, descend confirm, shake/flash
     │   ├── GameUiState.kt     → Sealed UI state: Loading, Playing, Descending, GameOver
-    │   ├── GameViewModel.kt   → Bridges engine to UI via StateFlow, handles death/inventory transitions
-    │   └── InventoryOverlay.kt→ Modal inventory UI: equipment slots, item grid, detail panel
+    │   ├── GameViewModel.kt   → Engine bridge, visual event system, inspect/minimap/log state
+    │   ├── InventoryOverlay.kt→ Inventory UI: equipment slots, item grid, stat comparison, detail panel
+    │   └── VisualEvent.kt     → Sealed event types: DamageNumber, ScreenShake, DamageFlash, LootParticle
     ├── classselect/
     │   ├── ClassSelectScreen.kt  → Class selection: 4 class cards with lock/unlock gating
     │   └── ClassSelectViewModel.kt → Exposes unlocked class IDs from meta-progression
@@ -147,7 +153,7 @@ app/src/main/java/com/shadowcrypt/game/
 
 ## Project Status
 
-This project is under active development. All 6 core phases are **complete**.
+All 6 core phases and QOL polish are **complete**.
 
 ### Development Phases
 
@@ -198,6 +204,19 @@ This project is under active development. All 6 core phases are **complete**.
   - Unlocks screen: run stats summary + 4 class cards with LOCKED/UNLOCKED status
   - Haptic feedback: 8 event-specific vibration patterns triggered via ViewModel state-diffing
   - Sound infrastructure: SoundPool (SFX) + MediaPlayer (BGM) framework with lifecycle hooks (silent no-ops until assets added)
+- [x] **QOL & Visual Polish** *(Complete)*
+  - Floating damage numbers: white (dealt), red (received), green (heal), gold (XP gain)
+  - Enemy HP bars on canvas: green/yellow/red color based on remaining HP percentage
+  - Screen shake on player damage (intensity scales with damage), red flash overlay on hit, white flash on kill
+  - Inventory stat comparison: equipment shows green/red stat deltas vs currently equipped gear
+  - Scrollable combat log: expandable panel with last 30 timestamped messages, auto-scroll
+  - Minimap overlay: translucent top-right display of explored rooms, player, visible enemies, stairs
+  - Enemy inspect on long-press: tooltip showing name, HP/MaxHP, ATK, DEF
+  - Descend confirmation dialog before floor transitions
+  - Turn counter in HUD (displayed as T123 next to floor number)
+  - Tile animations: torch flicker (crypt/inferno), water shimmer (sewers), crystal sparkle (caverns), void pulse
+  - Loot pickup particle burst: 6 rarity-colored particles spread outward and fade
+  - Visual event system: SharedFlow-based sealed interface driving all animations from ViewModel state-diffing
 
 ## Privacy
 
