@@ -727,10 +727,10 @@ class GameEngine(
     }
 
     private fun getTorchViewRadius(torchFuel: Int): Int = when {
-        torchFuel > 60 -> 16
-        torchFuel > 30 -> 12
-        torchFuel > 10 -> 8
-        torchFuel > 0 -> 5
+        torchFuel > 60 -> 24
+        torchFuel > 30 -> 16
+        torchFuel > 10 -> 10
+        torchFuel > 0 -> 6
         else -> 3
     }
 

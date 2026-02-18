@@ -249,7 +249,7 @@ class GameViewModel : ViewModel() {
                 if (current.player.position == target) break
 
                 val path = Pathfinding.findPath(
-                    current.player.position, target, current.dungeon
+                    current.player.position, target, current.dungeon, maxDistance = 200
                 )
                 if (path.isNullOrEmpty()) break
 
