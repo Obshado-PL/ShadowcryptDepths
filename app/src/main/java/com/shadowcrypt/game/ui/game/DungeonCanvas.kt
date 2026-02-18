@@ -109,10 +109,10 @@ fun DungeonCanvas(
                         it.position.x == worldX && it.position.y == worldY
                     }
                     if (enemy != null) {
-                        val isTough = enemy.type.name in setOf("DEMON", "SHADOW", "GOLEM")
-                        val enemyDrawColor = if (isTough) BossColor else EnemyColor
+                        val isBoss = enemy.type.isBoss
+                        val enemyDrawColor = if (isBoss) BossColor else EnemyColor
                         val center = Offset(left + tileSize / 2, top + tileSize / 2)
-                        val half = tileSize * 0.3f
+                        val half = tileSize * if (isBoss) 0.45f else 0.3f
                         val path = Path().apply {
                             moveTo(center.x, center.y - half)
                             lineTo(center.x + half, center.y)
@@ -121,6 +121,18 @@ fun DungeonCanvas(
                             close()
                         }
                         drawPath(path, enemyDrawColor)
+                        // Inner glow for bosses
+                        if (isBoss) {
+                            val innerHalf = half * 0.5f
+                            val innerPath = Path().apply {
+                                moveTo(center.x, center.y - innerHalf)
+                                lineTo(center.x + innerHalf, center.y)
+                                lineTo(center.x, center.y + innerHalf)
+                                lineTo(center.x - innerHalf, center.y)
+                                close()
+                            }
+                            drawPath(innerPath, Color.White.copy(alpha = 0.4f))
+                        }
                     }
                 }
 

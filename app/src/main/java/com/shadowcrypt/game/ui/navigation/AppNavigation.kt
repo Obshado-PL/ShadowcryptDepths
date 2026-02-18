@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.shadowcrypt.game.ui.classselect.ClassSelectScreen
 import com.shadowcrypt.game.ui.game.GameScreen
 import com.shadowcrypt.game.ui.mainmenu.MainMenuScreen
 
@@ -90,17 +91,13 @@ fun AppNavigation() {
 
         // ===== Class Select Screen =====
         // Player picks their character class before starting a run.
-        // TODO: Phase 5 — implement ClassSelectScreen
         composable<ClassSelectRoute> {
-            // Placeholder: for now, start a game directly as warrior
-            MainMenuScreen(
-                onNewRun = {
-                    navController.navigate(GameRoute(classId = "warrior")) {
+            ClassSelectScreen(
+                onClassSelected = { classId ->
+                    navController.navigate(GameRoute(classId = classId)) {
                         popUpTo(MainMenuRoute)
                     }
-                },
-                onSettings = {},
-                onUnlocks = {}
+                }
             )
         }
 

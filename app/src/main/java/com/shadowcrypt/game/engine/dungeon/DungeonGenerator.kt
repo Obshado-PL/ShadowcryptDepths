@@ -45,11 +45,15 @@ object DungeonGenerator {
             val dy = room.centerY - startRoom.centerY
             dx * dx + dy * dy
         }
+        val endRoomIndex = rooms.indexOf(endRoom).coerceAtLeast(0)
 
         val stairsUpPos = Position(startRoom.centerX, startRoom.centerY)
         val stairsDownPos = Position(endRoom.centerX, endRoom.centerY)
 
-        grid[stairsDownPos.y][stairsDownPos.x] = Tile.STAIRS_DOWN
+        // Floor 10 is the final floor — no stairs down
+        if (floorNumber < 10) {
+            grid[stairsDownPos.y][stairsDownPos.x] = Tile.STAIRS_DOWN
+        }
         if (floorNumber > 1) {
             grid[stairsUpPos.y][stairsUpPos.x] = Tile.STAIRS_UP
         }
@@ -76,7 +80,8 @@ object DungeonGenerator {
             stairsUpPos = if (floorNumber > 1) stairsUpPos else null,
             floorNumber = floorNumber,
             rooms = rooms,
-            startRoomIndex = startRoomIndex
+            startRoomIndex = startRoomIndex,
+            endRoomIndex = endRoomIndex
         )
     }
 

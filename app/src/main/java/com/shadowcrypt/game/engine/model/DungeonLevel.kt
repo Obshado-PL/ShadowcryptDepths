@@ -11,5 +11,6 @@ data class DungeonLevel(
     val stairsUpPos: Position?,
     val floorNumber: Int,
     val rooms: List<Room> = emptyList(),
-    val startRoomIndex: Int = 0
+    val startRoomIndex: Int = 0,
+    val endRoomIndex: Int = 0
 )

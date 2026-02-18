@@ -51,6 +51,7 @@ object GameEngine {
         val enemies = EnemySpawner.spawnEnemies(
             rooms = dungeon.rooms,
             startRoomIndex = dungeon.startRoomIndex,
+            endRoomIndex = dungeon.endRoomIndex,
             floorNumber = floorNumber,
             tiles = dungeon.tiles,
             playerStart = dungeon.playerStart,
@@ -83,7 +84,7 @@ object GameEngine {
     }
 
     fun processAction(state: GameState, action: GameAction): GameState {
-        if (state.isPlayerDead) return state
+        if (state.isPlayerDead || state.isVictorious) return state
         return when (action) {
             is GameAction.Move -> handleMove(state, action.direction)
             is GameAction.Wait -> handleWait(state)
@@ -162,6 +163,8 @@ object GameEngine {
         var newGroundItems = state.groundItems
         var newNextItemId = state.nextItemId
 
+        var victory = false
+
         if (killed) {
             newEnemies = newEnemies.filter { it.id != enemy.id }
             newPlayer = newPlayer.copy(
@@ -170,18 +173,35 @@ object GameEngine {
             )
             messages.add("${enemy.type.displayName} defeated! +${updatedEnemy.xpReward} XP")
 
-            // Item drop
+            // Item drop: guaranteed Legendary for bosses, random roll for others
             val dropRandom = Random(state.seed + state.turnCount.toLong() * 7 + enemy.id.toLong())
-            val drop = ItemGenerator.rollDrop(
-                enemyType = enemy.type,
-                floorNumber = state.player.floorNumber,
-                nextItemId = newNextItemId,
-                random = dropRandom
-            )
-            if (drop != null) {
-                newGroundItems = newGroundItems + Pair(drop, enemy.position)
+            if (enemy.type.isBoss) {
+                val bossDrop = ItemGenerator.generateBossDrop(
+                    floorNumber = state.player.floorNumber,
+                    nextItemId = newNextItemId,
+                    random = dropRandom
+                )
+                newGroundItems = newGroundItems + Pair(bossDrop, enemy.position)
                 newNextItemId++
-                messages.add("${enemy.type.displayName} dropped ${drop.name}!")
+                messages.add("${enemy.type.displayName} dropped ${bossDrop.name}!")
+
+                // Victory: killing floor 10 boss wins the game
+                if (state.player.floorNumber == 10) {
+                    victory = true
+                    messages.add("The Shadowcrypt crumbles around you... You are victorious!")
+                }
+            } else {
+                val drop = ItemGenerator.rollDrop(
+                    enemyType = enemy.type,
+                    floorNumber = state.player.floorNumber,
+                    nextItemId = newNextItemId,
+                    random = dropRandom
+                )
+                if (drop != null) {
+                    newGroundItems = newGroundItems + Pair(drop, enemy.position)
+                    newNextItemId++
+                    messages.add("${enemy.type.displayName} dropped ${drop.name}!")
+                }
             }
 
             val (leveledPlayer, didLevel) = CombatEngine.checkLevelUp(newPlayer)
@@ -201,10 +221,12 @@ object GameEngine {
             groundItems = newGroundItems,
             nextItemId = newNextItemId,
             turnCount = state.turnCount + 1,
-            message = messages.joinToString(" ")
+            message = messages.joinToString(" "),
+            isVictorious = victory
         )
 
         val fovState = recalculateFov(attackState)
+        if (victory) return fovState
         return EnemyAi.processEnemyTurns(fovState)
     }
 
@@ -220,6 +242,10 @@ object GameEngine {
         val currentTile = state.dungeon.tiles[state.player.position.y][state.player.position.x]
         if (currentTile != Tile.STAIRS_DOWN) {
             return state.copy(message = "No stairs here.")
+        }
+
+        if (state.player.floorNumber >= 10) {
+            return state.copy(message = "There is no way deeper.")
         }
 
         val newFloor = state.player.floorNumber + 1
@@ -238,6 +264,7 @@ object GameEngine {
         val newEnemies = EnemySpawner.spawnEnemies(
             rooms = newDungeon.rooms,
             startRoomIndex = newDungeon.startRoomIndex,
+            endRoomIndex = newDungeon.endRoomIndex,
             floorNumber = newFloor,
             tiles = newDungeon.tiles,
             playerStart = newDungeon.playerStart,

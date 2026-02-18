@@ -45,6 +45,20 @@ class GameViewModel(
                 delay(800)
             }
 
+            // Victory → show victory message briefly, then game over (won)
+            if (newState.isVictorious) {
+                _uiState.value = GameUiState.Playing(newState)
+                delay(2000)
+                _uiState.value = GameUiState.GameOver(
+                    floorReached = newState.player.floorNumber,
+                    enemiesKilled = newState.player.enemiesKilled,
+                    turnsTaken = newState.turnCount,
+                    level = newState.player.level,
+                    won = true
+                )
+                return@launch
+            }
+
             // Player death → show death message briefly, then game over
             if (newState.isPlayerDead) {
                 _uiState.value = GameUiState.Playing(newState)

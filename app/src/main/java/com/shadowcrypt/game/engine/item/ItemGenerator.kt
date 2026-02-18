@@ -25,6 +25,15 @@ object ItemGenerator {
         return generateItem(floorNumber, nextItemId, random)
     }
 
+    fun generateBossDrop(floorNumber: Int, nextItemId: Int, random: Random): ItemData {
+        val type = when (random.nextInt(3)) {
+            0 -> ItemType.WEAPON
+            1 -> ItemType.ARMOR
+            else -> ItemType.ACCESSORY
+        }
+        return createItem(type, Rarity.LEGENDARY, nextItemId, random)
+    }
+
     fun generateItem(floorNumber: Int, nextItemId: Int, random: Random): ItemData {
         val rarity = rollRarity(floorNumber, random)
         val type = rollItemType(random)

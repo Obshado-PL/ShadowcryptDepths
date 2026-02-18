@@ -10,6 +10,7 @@ sealed interface GameUiState {
         val floorReached: Int,
         val enemiesKilled: Int,
         val turnsTaken: Int,
-        val level: Int
+        val level: Int,
+        val won: Boolean = false
     ) : GameUiState
 }

@@ -150,6 +150,9 @@ fun GameScreen(
             }
 
             is GameUiState.GameOver -> {
+                val titleText = if (state.won) "VICTORY" else "YOU HAVE FALLEN"
+                val titleColor = if (state.won) XpGold else HealthRed
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -161,10 +164,18 @@ fun GameScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "YOU HAVE FALLEN",
+                            text = titleText,
                             style = MaterialTheme.typography.displayMedium,
-                            color = HealthRed
+                            color = titleColor
                         )
+
+                        if (state.won) {
+                            Text(
+                                text = "The Shadowcrypt has been conquered!",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
 

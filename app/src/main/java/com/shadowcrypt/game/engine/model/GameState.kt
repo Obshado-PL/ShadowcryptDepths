@@ -9,6 +9,7 @@ data class GameState(
     val seed: Long,
     val message: String? = null,
     val isPlayerDead: Boolean = false,
+    val isVictorious: Boolean = false,
     val groundItems: List<Pair<ItemData, Position>> = emptyList(),
     val nextItemId: Int = 0
 )
