@@ -6,7 +6,7 @@ A turn-based roguelike dungeon crawler for Android, built with Kotlin and Jetpac
 
 Descend into the Shadowcrypt — a procedurally generated dungeon filled with monsters, traps, and treasure. Each run is unique with randomized dungeon layouts, enemy placements, and loot drops. Death is permanent, but your legacy lives on through meta-progression unlocks that make future runs stronger.
 
-### Key Features
+### Planned Features
 
 - **Procedurally Generated Dungeons** — Every run creates a unique dungeon using BSP (Binary Space Partitioning) room-and-corridor generation
 - **Turn-Based Tactical Combat** — Move and attack on a grid. Every action matters when enemies close in from all sides
@@ -21,13 +21,26 @@ Descend into the Shadowcrypt — a procedurally generated dungeon filled with mo
 
 ## Architecture
 
-The project follows clean architecture principles with a pure Kotlin game engine that has zero Android dependencies:
+The project follows clean architecture principles with a pure Kotlin game engine separated from the Android UI layer.
+
+### Current Structure
+
+```
+app/src/main/java/com/shadowcrypt/game/
+├── MainActivity.kt       → Single-activity entry point with edge-to-edge display
+├── ShadowcryptApp.kt     → Application class + ServiceLocator for shared services
+└── ui/
+    ├── mainmenu/          → Main menu screen (title, new run, unlocks, settings)
+    ├── navigation/        → Type-safe navigation routes and screen transitions
+    └── theme/             → Dark dungeon color palette, monospace typography, Material 3 theme
+```
+
+### Planned Structure (upcoming phases)
 
 ```
 engine/  → Pure Kotlin game logic (dungeon gen, combat, AI, FOV, pathfinding)
 model/   → Immutable data classes (no Android deps)
 data/    → Android persistence layer (DataStore repositories)
-ui/      → Jetpack Compose screens and components
 audio/   → Sound management (SoundPool + MediaPlayer)
 haptic/  → Vibration feedback
 ```
@@ -97,7 +110,7 @@ haptic/  → Vibration feedback
 
 This project is under active development. Current implementation progress:
 
-- [x] Phase 1: Project scaffolding, Gradle setup, theme, navigation
+- [x] Phase 1: Project scaffolding, Gradle setup, theme, navigation, main menu
 - [ ] Phase 2: Core engine, dungeon generation, player movement, fog of war
 - [ ] Phase 3: Combat system, enemies, AI, XP/leveling
 - [ ] Phase 4: Items, inventory, loot generation

@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import com.shadowcrypt.game.ui.mainmenu.MainMenuScreen
 
 /** Duration for all screen transitions (400ms with smooth deceleration) */
@@ -121,8 +120,7 @@ fun AppNavigation() {
                     animationSpec = tween(NAV_ANIM_DURATION, easing = FastOutSlowInEasing)
                 ) + fadeOut(animationSpec = tween(NAV_ANIM_DURATION, easing = FastOutSlowInEasing))
             }
-        ) { backStackEntry ->
-            val route = backStackEntry.toRoute<GameRoute>()
+        ) {
             // Placeholder: navigate back to menu for now
             MainMenuScreen(
                 onNewRun = {
@@ -144,8 +142,7 @@ fun AppNavigation() {
                     animationSpec = tween(NAV_ANIM_DURATION, easing = FastOutSlowInEasing)
                 ) + fadeIn(animationSpec = tween(NAV_ANIM_DURATION, easing = FastOutSlowInEasing))
             }
-        ) { backStackEntry ->
-            val route = backStackEntry.toRoute<GameOverRoute>()
+        ) {
             MainMenuScreen(
                 onNewRun = {
                     navController.navigate(MainMenuRoute) {
