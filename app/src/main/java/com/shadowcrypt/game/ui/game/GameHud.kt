@@ -1,11 +1,14 @@
 package com.shadowcrypt.game.ui.game
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +59,8 @@ import com.shadowcrypt.game.ui.theme.XpGoldDark
 @Composable
 fun TopHud(
     state: GameState,
+    onUndo: () -> Unit = {},
+    onPause: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isLowHp = state.player.hpFraction < 0.25f
@@ -70,6 +75,17 @@ fun TopHud(
             tween(300)
         },
         label = "hpPulse"
+    )
+
+    val animatedHpFraction by animateFloatAsState(
+        targetValue = state.player.hpFraction,
+        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+        label = "hpBar"
+    )
+    val animatedXpFraction by animateFloatAsState(
+        targetValue = state.player.xpFraction,
+        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+        label = "xpBar"
     )
 
     Row(
@@ -96,7 +112,7 @@ fun TopHud(
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .fillMaxWidth(state.player.hpFraction)
+                        .fillMaxWidth(animatedHpFraction.coerceIn(0f, 1f))
                         .clip(RoundedCornerShape(4.dp))
                         .background(hpBarColor)
                 )
@@ -116,7 +132,7 @@ fun TopHud(
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .fillMaxWidth(state.player.xpFraction)
+                        .fillMaxWidth(animatedXpFraction.coerceIn(0f, 1f))
                         .clip(RoundedCornerShape(3.dp))
                         .background(XpGold)
                 )
@@ -127,6 +143,11 @@ fun TopHud(
                 // Torch bar
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val torchFraction = state.player.torchFuel.toFloat() / state.player.maxTorchFuel
+                    val animatedTorchFraction by animateFloatAsState(
+                        targetValue = torchFraction,
+                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                        label = "torchBar"
+                    )
                     val torchColor = when {
                         torchFraction > 0.5f -> Color(0xFFFFAA00)
                         torchFraction > 0.2f -> Color(0xFFFF7700)
@@ -146,7 +167,7 @@ fun TopHud(
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight()
-                                .fillMaxWidth(torchFraction)
+                                .fillMaxWidth(animatedTorchFraction.coerceIn(0f, 1f))
                                 .clip(RoundedCornerShape(2.dp))
                                 .background(torchColor)
                         )
@@ -155,6 +176,11 @@ fun TopHud(
                 // Hunger bar
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val hungerFraction = state.player.hunger.toFloat() / state.player.maxHunger
+                    val animatedHungerFraction by animateFloatAsState(
+                        targetValue = hungerFraction,
+                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                        label = "hungerBar"
+                    )
                     val hungerColor = when {
                         hungerFraction > 0.5f -> Color(0xFF66BB6A)
                         hungerFraction > 0.2f -> Color(0xFFFF9800)
@@ -174,7 +200,7 @@ fun TopHud(
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight()
-                                .fillMaxWidth(hungerFraction)
+                                .fillMaxWidth(animatedHungerFraction.coerceIn(0f, 1f))
                                 .clip(RoundedCornerShape(2.dp))
                                 .background(hungerColor)
                         )
@@ -243,11 +269,44 @@ fun TopHud(
             }
         }
 
-        Text(
-            text = "T:${state.turnCount}",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextPrimary.copy(alpha = 0.7f)
-        )
+        Column(horizontalAlignment = Alignment.End) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(DungeonPurple80.copy(alpha = 0.15f))
+                        .clickable { onUndo() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "UNDO",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextPrimary
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(DungeonPurple80.copy(alpha = 0.15f))
+                        .clickable { onPause() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "PAUSE",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextPrimary
+                    )
+                }
+            }
+            Text(
+                text = "T:${state.turnCount}",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextPrimary.copy(alpha = 0.7f),
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
     }
 }
 

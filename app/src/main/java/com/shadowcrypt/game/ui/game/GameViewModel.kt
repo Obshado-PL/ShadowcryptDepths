@@ -40,6 +40,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+data class MoveAnimation(
+    val fromX: Int,
+    val fromY: Int,
+    val toX: Int,
+    val toY: Int,
+    val startTimeMs: Long,
+    val durationMs: Long = 150L
+)
+
 class GameViewModel : ViewModel() {
 
     private val engine = GameEngine()
@@ -75,6 +84,15 @@ class GameViewModel : ViewModel() {
 
     private val _achievementToasts = MutableStateFlow<List<AchievementToast>>(emptyList())
     val achievementToasts: StateFlow<List<AchievementToast>> = _achievementToasts.asStateFlow()
+
+    private val _turnFlashUntil = MutableStateFlow(0L)
+    val turnFlashUntil: StateFlow<Long> = _turnFlashUntil.asStateFlow()
+
+    private val _playerMoveAnimation = MutableStateFlow<MoveAnimation?>(null)
+    val playerMoveAnimation: StateFlow<MoveAnimation?> = _playerMoveAnimation.asStateFlow()
+
+    private val _entityMoveAnimations = MutableStateFlow<Map<Int, MoveAnimation>>(emptyMap())
+    val entityMoveAnimations: StateFlow<Map<Int, MoveAnimation>> = _entityMoveAnimations.asStateFlow()
 
     private val toastedAchievements = mutableSetOf<String>()
     private var lastSkillUsed: Skill? = null
@@ -349,12 +367,29 @@ class GameViewModel : ViewModel() {
         _achievementToasts.value = _achievementToasts.value.filterNot { it.isExpired(currentTimeMs) }
     }
 
+    fun cleanupExpiredMoveAnimations(currentTimeMs: Long) {
+        _playerMoveAnimation.value?.let {
+            if (currentTimeMs - it.startTimeMs >= it.durationMs) {
+                _playerMoveAnimation.value = null
+            }
+        }
+        val current = _entityMoveAnimations.value
+        if (current.isNotEmpty()) {
+            val active = current.filterValues { currentTimeMs - it.startTimeMs < it.durationMs }
+            if (active.size != current.size) {
+                _entityMoveAnimations.value = active
+            }
+        }
+    }
+
     fun undoLastMove() {
         val prev = previousState ?: return
         _gameState.value = prev
         previousState = null
         _floatingTexts.value = emptyList()
         _canvasEffects.value = emptyList()
+        _playerMoveAnimation.value = null
+        _entityMoveAnimations.value = emptyMap()
     }
 
     private fun updateWithEvents(old: GameState, new: GameState) {
@@ -365,6 +400,41 @@ class GameViewModel : ViewModel() {
         checkInGameAchievements(old, new)
         _gameState.value = new
         autoSave()
+
+        // Movement animations
+        val now = System.currentTimeMillis()
+        if (new.player.position != old.player.position) {
+            _playerMoveAnimation.value = MoveAnimation(
+                fromX = old.player.position.x,
+                fromY = old.player.position.y,
+                toX = new.player.position.x,
+                toY = new.player.position.y,
+                startTimeMs = now
+            )
+        }
+        val enemyAnims = mutableMapOf<Int, MoveAnimation>()
+        var anyEnemyMoved = false
+        for (newEnemy in new.enemies) {
+            val oldEnemy = old.enemies.find { it.id == newEnemy.id } ?: continue
+            if (newEnemy.position != oldEnemy.position) {
+                anyEnemyMoved = true
+                enemyAnims[newEnemy.id] = MoveAnimation(
+                    fromX = oldEnemy.position.x,
+                    fromY = oldEnemy.position.y,
+                    toX = newEnemy.position.x,
+                    toY = newEnemy.position.y,
+                    startTimeMs = now
+                )
+            }
+        }
+        if (enemyAnims.isNotEmpty()) {
+            _entityMoveAnimations.value = _entityMoveAnimations.value + enemyAnims
+        }
+
+        // Turn transition flash when enemies act
+        if (new.player.hp < old.player.hp || anyEnemyMoved) {
+            _turnFlashUntil.value = now + 150L
+        }
 
         // Discover visible enemy types for bestiary
         val visibleEnemyTypes = new.enemies

@@ -82,6 +82,9 @@ fun GameScreen(
     val canvasEffects by viewModel.canvasEffects.collectAsStateWithLifecycle()
     val achievementToasts by viewModel.achievementToasts.collectAsStateWithLifecycle()
     val playerFlashUntil by viewModel.playerFlashUntil.collectAsStateWithLifecycle()
+    val turnFlashUntil by viewModel.turnFlashUntil.collectAsStateWithLifecycle()
+    val playerMoveAnim by viewModel.playerMoveAnimation.collectAsStateWithLifecycle()
+    val entityMoveAnims by viewModel.entityMoveAnimations.collectAsStateWithLifecycle()
 
     val settings by ServiceLocator.settingsRepository.settings.collectAsStateWithLifecycle(
         initialValue = ServiceLocator.settingsRepository.run {
@@ -156,6 +159,7 @@ fun GameScreen(
                             viewModel.removeExpiredFloatingTexts(now)
                             viewModel.removeExpiredCanvasEffects(now)
                             viewModel.removeExpiredToasts(now)
+                            viewModel.cleanupExpiredMoveAnimations(now)
                         }
                     }
                 }
@@ -166,6 +170,9 @@ fun GameScreen(
                     floatingTexts = floatingTexts,
                     canvasEffects = canvasEffects,
                     playerFlashUntil = playerFlashUntil,
+                    turnFlashUntil = turnFlashUntil,
+                    playerMoveAnimation = playerMoveAnim,
+                    entityMoveAnimations = entityMoveAnims,
                     onTileTap = { viewModel.tapTile(it) },
                     onTileLongPress = { pos ->
                         val enemy = state.enemies.find {
@@ -184,6 +191,8 @@ fun GameScreen(
                 // Top HUD
                 TopHud(
                     state = state,
+                    onUndo = { viewModel.undoLastMove() },
+                    onPause = { viewModel.togglePause() },
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
 
@@ -201,47 +210,15 @@ fun GameScreen(
                         .padding(bottom = 180.dp)
                 )
 
-                // Top-right column: Pause + Undo buttons + Minimap
+                // Top-right column: Minimap + QuestTracker (below HUD bar)
                 Column(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(top = 8.dp, end = 16.dp),
+                        .padding(top = 68.dp, end = 16.dp),
                     horizontalAlignment = Alignment.End
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(HudBackground)
-                                .clickable { viewModel.undoLastMove() }
-                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "UNDO",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextPrimary
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(HudBackground)
-                                .clickable { viewModel.togglePause() }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "PAUSE",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextPrimary
-                            )
-                        }
-                    }
-
                     Minimap(
-                        state = state,
-                        modifier = Modifier.padding(top = 8.dp)
+                        state = state
                     )
 
                     QuestTracker(

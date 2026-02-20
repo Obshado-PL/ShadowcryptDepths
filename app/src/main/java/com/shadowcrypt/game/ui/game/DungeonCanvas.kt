@@ -69,7 +69,11 @@ import com.shadowcrypt.game.ui.theme.VoidWall
 import com.shadowcrypt.game.ui.theme.WaterColor
 import com.shadowcrypt.game.model.StatusEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 @Composable
 fun DungeonCanvas(
@@ -77,6 +81,9 @@ fun DungeonCanvas(
     floatingTexts: List<FloatingText> = emptyList(),
     canvasEffects: List<CanvasEffect> = emptyList(),
     playerFlashUntil: Long = 0L,
+    turnFlashUntil: Long = 0L,
+    playerMoveAnimation: MoveAnimation? = null,
+    entityMoveAnimations: Map<Int, MoveAnimation> = emptyMap(),
     onTileTap: (Position) -> Unit,
     onTileLongPress: (Position) -> Unit = {},
     onSwipeMove: (dx: Int, dy: Int) -> Unit = { _, _ -> },
@@ -182,8 +189,8 @@ fun DungeonCanvas(
                     onDragEnd = {
                         val minSwipeDist = baseTileSize * scale * 1.5f
                         if (totalDrag.getDistance() > minSwipeDist) {
-                            val absX = kotlin.math.abs(totalDrag.x)
-                            val absY = kotlin.math.abs(totalDrag.y)
+                            val absX = abs(totalDrag.x)
+                            val absY = abs(totalDrag.y)
                             if (absX > absY) {
                                 onSwipeMove(if (totalDrag.x > 0) 1 else -1, 0)
                             } else {
@@ -229,8 +236,8 @@ fun DungeonCanvas(
         }
         val decoYOffset = -(decoPaint.ascent() + decoPaint.descent()) / 2f
 
-        // Pre-compute wall emoji and room type lookup for this floor
-        val themedWallEmoji = wallEmoji(state.dungeon.theme)
+        // Pre-compute wall emoji variants and room type lookup for this floor
+        val wallVariants = wallEmojiVariants(state.dungeon.theme)
         val roomTypeAt = HashMap<Long, RoomType>(state.dungeon.rooms.sumOf { it.width * it.height })
         for (room in state.dungeon.rooms) {
             if (room.type == RoomType.Normal) continue
@@ -256,6 +263,17 @@ fun DungeonCanvas(
         val endRow = ((size.height - cameraY) / tileSize).toInt()
             .coerceAtMost(state.dungeon.height - 1)
 
+        // View radius for FOV gradient + flicker
+        val viewRadius = when {
+            state.player.torchFuel > 60 -> 24f
+            state.player.torchFuel > 30 -> 16f
+            state.player.torchFuel > 10 -> 10f
+            state.player.torchFuel > 0 -> 6f
+            else -> 3f
+        }
+        val playerPosX = state.player.position.x
+        val playerPosY = state.player.position.y
+
         for (row in startRow..endRow) {
             for (col in startCol..endCol) {
                 val pos = Position(col, row)
@@ -277,14 +295,14 @@ fun DungeonCanvas(
 
                     Visibility.Explored -> {
                         val tile = state.dungeon.grid[row][col]
-                        val tileColor = getTileColor(tile, state.dungeon.theme, col, row)
+                        val tileColor = getTileColor(tile, state.dungeon.theme, col, row, currentTime)
                         drawRect(color = tileColor, topLeft = topLeft, size = tileSizeObj)
 
                         // Wall emoji texture
                         if (tile == Tile.Wall) {
                             drawIntoCanvas { canvas ->
                                 canvas.nativeCanvas.drawText(
-                                    themedWallEmoji,
+                                    wallVariants[(col * 7919 + row * 6271).and(0x7FFFFFFF) % wallVariants.size],
                                     screenX + tileSize / 2f,
                                     screenY + tileSize / 2f + wallYOffset,
                                     wallPaint
@@ -320,14 +338,14 @@ fun DungeonCanvas(
 
                     Visibility.Visible -> {
                         val tile = state.dungeon.grid[row][col]
-                        val tileColor = getTileColor(tile, state.dungeon.theme, col, row)
+                        val tileColor = getTileColor(tile, state.dungeon.theme, col, row, currentTime)
                         drawRect(color = tileColor, topLeft = topLeft, size = tileSizeObj)
 
                         // Wall emoji texture
                         if (tile == Tile.Wall) {
                             drawIntoCanvas { canvas ->
                                 canvas.nativeCanvas.drawText(
-                                    themedWallEmoji,
+                                    wallVariants[(col * 7919 + row * 6271).and(0x7FFFFFFF) % wallVariants.size],
                                     screenX + tileSize / 2f,
                                     screenY + tileSize / 2f + wallYOffset,
                                     wallPaint
@@ -358,8 +376,117 @@ fun DungeonCanvas(
                                 }
                             }
                         }
+
+                        // FOV gradient + torch flicker
+                        val dx = (col - playerPosX).toFloat()
+                        val dy = (row - playerPosY).toFloat()
+                        val dist = maxOf(abs(dx), abs(dy))
+                        val fogStart = viewRadius * 0.7f
+                        val fogRange = viewRadius - fogStart
+                        if (dist > fogStart && fogRange > 0.1f) {
+                            val edgeFraction = ((dist - fogStart) / fogRange).coerceIn(0f, 1f)
+                            // Gradient: darken outer tiles
+                            val gradientAlpha = edgeFraction * 0.55f
+                            // Flicker: time-varying overlay
+                            val flickerBase = 0.04f * sin(
+                                currentTime / 200.0
+                            ).toFloat()
+                            val flickerDetail = 0.025f * sin(
+                                currentTime / 130.0 + col * 0.5
+                            ).toFloat()
+                            val flickerAlpha = (flickerBase + flickerDetail) * edgeFraction
+                            val totalAlpha = (gradientAlpha + flickerAlpha).coerceIn(0f, 0.65f)
+                            drawRect(
+                                color = Color.Black.copy(alpha = totalAlpha),
+                                topLeft = topLeft,
+                                size = tileSizeObj
+                            )
+                        }
                     }
                 }
+            }
+        }
+
+        // Ambient particles per theme
+        val theme = state.dungeon.theme
+        val particleCycleMs = when (theme) {
+            FloorTheme.Crypt -> 3000L
+            FloorTheme.Sewers -> 1500L
+            FloorTheme.Caverns -> 500L
+            FloorTheme.Inferno -> 2000L
+            FloorTheme.Void -> 2500L
+        }
+        val particleColor = when (theme) {
+            FloorTheme.Crypt -> Color.White
+            FloorTheme.Sewers -> Color(0xFF4488CC)
+            FloorTheme.Caverns -> Color(0xFF00EEFF)
+            FloorTheme.Inferno -> Color(0xFFFF8833)
+            FloorTheme.Void -> Color(0xFFBB66FF)
+        }
+        var particleCount = 0
+        val maxParticles = 35
+        for (row in startRow..endRow) {
+            if (particleCount >= maxParticles) break
+            for (col in startCol..endCol) {
+                if (particleCount >= maxParticles) break
+                val pPos = Position(col, row)
+                if (state.visibilityMap[pPos] != Visibility.Visible) continue
+
+                val hash = (col * 7919 + row * 6271) and 0x7FFFFFFF
+                if (hash % 100 >= 5) continue // ~5% of visible tiles
+
+                val phase = ((currentTime + hash) % particleCycleMs).toFloat() / particleCycleMs
+                val baseX = cameraX + col * tileSize + tileSize / 2f
+                val baseY = cameraY + row * tileSize + tileSize / 2f
+
+                var pxOff = 0f
+                var pyOff = 0f
+                var pAlpha = 0.2f
+                var pRadius = 2f
+                when (theme) {
+                    FloorTheme.Crypt -> {
+                        // Slow-drifting dust motes
+                        pxOff = tileSize * 0.3f * sin(phase * 2.0 * PI).toFloat()
+                        pyOff = tileSize * 0.2f * sin(phase * 2.0 * PI * 0.7).toFloat()
+                        pAlpha = 0.15f + 0.1f * sin(phase * 2.0 * PI).toFloat()
+                        pRadius = 1.5f
+                    }
+                    FloorTheme.Sewers -> {
+                        // Water droplets falling downward
+                        pyOff = tileSize * (phase - 0.5f)
+                        pAlpha = (1f - phase) * 0.35f
+                        pRadius = 2f
+                    }
+                    FloorTheme.Caverns -> {
+                        // Crystal sparkle flashes
+                        val sparkle = if (phase < 0.3f) phase / 0.3f else (1f - phase) / 0.7f
+                        pAlpha = sparkle * 0.6f
+                        pRadius = 1.5f
+                    }
+                    FloorTheme.Inferno -> {
+                        // Embers drifting upward
+                        pyOff = -tileSize * phase * 0.8f
+                        pxOff = tileSize * 0.15f * sin(phase * 4.0 * PI).toFloat()
+                        pAlpha = (1f - phase) * 0.4f
+                        pRadius = 2.5f
+                    }
+                    FloorTheme.Void -> {
+                        // Slow spiraling wisps
+                        val angle = phase * 2.0 * PI
+                        val spiralR = tileSize * 0.25f
+                        pxOff = spiralR * cos(angle).toFloat()
+                        pyOff = spiralR * sin(angle).toFloat()
+                        pAlpha = 0.15f + 0.15f * sin(phase * 4.0 * PI).toFloat()
+                        pRadius = 2f
+                    }
+                }
+
+                drawCircle(
+                    color = particleColor.copy(alpha = pAlpha.coerceIn(0f, 1f)),
+                    radius = pRadius,
+                    center = Offset(baseX + pxOff, baseY + pyOff)
+                )
+                particleCount++
             }
         }
 
@@ -439,13 +566,25 @@ fun DungeonCanvas(
                 if ((currentTime / 30) % 2 == 0L) wobble else -wobble
             } else 0f
 
-            val ex = cameraX + enemy.position.x * tileSize + wobbleX
-            val ey = cameraY + enemy.position.y * tileSize
+            // Smooth movement interpolation
+            val moveAnim = entityMoveAnimations[enemy.id]
+            val (enemyDrawX, enemyDrawY) = if (moveAnim != null) {
+                val t = ((currentTime - moveAnim.startTimeMs).toFloat() /
+                        moveAnim.durationMs).coerceIn(0f, 1f)
+                val eased = t * t * (3f - 2f * t) // smoothstep
+                val lerpX = moveAnim.fromX + (moveAnim.toX - moveAnim.fromX) * eased
+                val lerpY = moveAnim.fromY + (moveAnim.toY - moveAnim.fromY) * eased
+                lerpX to lerpY
+            } else {
+                enemy.position.x.toFloat() to enemy.position.y.toFloat()
+            }
+            val ex = cameraX + enemyDrawX * tileSize + wobbleX
+            val ey = cameraY + enemyDrawY * tileSize
             val color = if (enemy.isBoss) BossColor else EnemyColor
 
             // Pulsing glow ring for visibility
-            val pulse = 0.6f + 0.4f * kotlin.math.sin(
-                (currentTime % 1500L) / 1500.0 * 2.0 * kotlin.math.PI
+            val pulse = 0.6f + 0.4f * sin(
+                (currentTime % 1500L) / 1500.0 * 2.0 * PI
             ).toFloat()
             val glowExpand = tileSize * 0.08f * pulse
             drawRect(
@@ -550,8 +689,8 @@ fun DungeonCanvas(
 
                 for ((i, effect) in enemyStatuses.withIndex()) {
                     val dotX = dotsStartX + i * dotSpacing
-                    val dotPulse = 0.7f + 0.3f * kotlin.math.sin(
-                        (currentTime % 1000L) / 1000.0 * 2.0 * kotlin.math.PI + i * 0.5
+                    val dotPulse = 0.7f + 0.3f * sin(
+                        (currentTime % 1000L) / 1000.0 * 2.0 * PI + i * 0.5
                     ).toFloat()
                     drawCircle(
                         color = statusEffectColor(effect).copy(alpha = dotPulse),
@@ -652,8 +791,8 @@ fun DungeonCanvas(
                             )
                         }
                         SkillEffectType.SelfGlow -> {
-                            val glowSize = tileSize * (1.0f + 0.5f * kotlin.math.sin(
-                                progress * kotlin.math.PI.toFloat() * 2
+                            val glowSize = tileSize * (1.0f + 0.5f * sin(
+                                progress * PI.toFloat() * 2
                             ))
                             val px = cameraX + effect.position.x * tileSize + tileSize / 2f
                             val py = cameraY + effect.position.y * tileSize + tileSize / 2f
@@ -675,9 +814,9 @@ fun DungeonCanvas(
                     val sparkleRadius = tileSize * 0.06f * (1f - progress * 0.5f)
 
                     for (i in 0 until 4) {
-                        val angle = (i * 90f + progress * 120f) * (kotlin.math.PI.toFloat() / 180f)
-                        val sx = cx + kotlin.math.cos(angle) * spread
-                        val sy = cy - rise + kotlin.math.sin(angle) * spread * 0.5f
+                        val angle = (i * 90f + progress * 120f) * (PI.toFloat() / 180f)
+                        val sx = cx + cos(angle) * spread
+                        val sy = cy - rise + sin(angle) * spread * 0.5f
                         drawCircle(
                             color = effect.color.copy(alpha = alpha * 0.8f),
                             radius = sparkleRadius,
@@ -695,9 +834,19 @@ fun DungeonCanvas(
             }
         }
 
-        // Draw player (flash red when damaged)
-        val playerScreenX = cameraX + state.player.position.x * tileSize
-        val playerScreenY = cameraY + state.player.position.y * tileSize
+        // Draw player (flash red when damaged, smooth movement)
+        val (playerDrawX, playerDrawY) = if (playerMoveAnimation != null) {
+            val t = ((currentTime - playerMoveAnimation.startTimeMs).toFloat() /
+                    playerMoveAnimation.durationMs).coerceIn(0f, 1f)
+            val eased = t * t * (3f - 2f * t) // smoothstep
+            val lerpX = playerMoveAnimation.fromX + (playerMoveAnimation.toX - playerMoveAnimation.fromX) * eased
+            val lerpY = playerMoveAnimation.fromY + (playerMoveAnimation.toY - playerMoveAnimation.fromY) * eased
+            lerpX to lerpY
+        } else {
+            state.player.position.x.toFloat() to state.player.position.y.toFloat()
+        }
+        val playerScreenX = cameraX + playerDrawX * tileSize
+        val playerScreenY = cameraY + playerDrawY * tileSize
         val playerInset = tileSize * 0.08f
         val playerDrawColor = if (currentTime < playerFlashUntil) HealthRed else PlayerColor
 
@@ -753,8 +902,8 @@ fun DungeonCanvas(
 
             for ((i, effect) in playerStatuses.withIndex()) {
                 val dotX = dotsStartX + i * dotSpacing
-                val dotPulse = 0.7f + 0.3f * kotlin.math.sin(
-                    (currentTime % 1000L) / 1000.0 * 2.0 * kotlin.math.PI + i * 0.5
+                val dotPulse = 0.7f + 0.3f * sin(
+                    (currentTime % 1000L) / 1000.0 * 2.0 * PI + i * 0.5
                 ).toFloat()
                 drawCircle(
                     color = statusEffectColor(effect).copy(alpha = dotPulse),
@@ -781,8 +930,8 @@ fun DungeonCanvas(
                 val clampedY = stairsScreenY.coerceIn(margin, size.height - margin)
 
                 // Pulsing alpha
-                val pulse = 0.6f + 0.4f * kotlin.math.sin(
-                    (currentTime % 2000L) / 2000.0 * 2.0 * kotlin.math.PI
+                val pulse = 0.6f + 0.4f * sin(
+                    (currentTime % 2000L) / 2000.0 * 2.0 * PI
                 ).toFloat()
 
                 // Draw arrow background
@@ -845,10 +994,20 @@ fun DungeonCanvas(
                 canvas.nativeCanvas.drawText(ft.text, screenX, screenY, textPaint)
             }
         }
+
+        // Turn transition flash (enemy phase vignette)
+        if (currentTime < turnFlashUntil) {
+            val flashAlpha = ((turnFlashUntil - currentTime).toFloat() / 150f) * 0.12f
+            drawRect(
+                color = Color.Black.copy(alpha = flashAlpha.coerceIn(0f, 0.12f)),
+                topLeft = Offset.Zero,
+                size = size
+            )
+        }
     }
 }
 
-private fun getTileColor(tile: Tile, theme: FloorTheme, col: Int, row: Int): Color {
+private fun getTileColor(tile: Tile, theme: FloorTheme, col: Int, row: Int, currentTime: Long = 0L): Color {
     return when (tile) {
         Tile.Floor -> {
             val (dark, light) = when (theme) {
@@ -873,8 +1032,28 @@ private fun getTileColor(tile: Tile, theme: FloorTheme, col: Int, row: Int): Col
         Tile.StairsDown -> StairsColor
         Tile.StairsUp -> StairsColor
         Tile.Trap -> TrapColor
-        Tile.Water -> WaterColor
-        Tile.Lava -> LavaColor
+        Tile.Water -> {
+            val shimmer = 0.05f * sin(
+                (currentTime % 2000L) / 2000.0 * 2.0 * PI + col * 0.7 + row * 0.3
+            ).toFloat()
+            Color(
+                red = (WaterColor.red + shimmer * 0.3f).coerceIn(0f, 1f),
+                green = (WaterColor.green + shimmer * 0.3f).coerceIn(0f, 1f),
+                blue = (WaterColor.blue + shimmer).coerceIn(0f, 1f),
+                alpha = WaterColor.alpha
+            )
+        }
+        Tile.Lava -> {
+            val pulse = 0.08f * sin(
+                (currentTime % 1500L) / 1500.0 * 2.0 * PI + col * 0.5 - row * 0.4
+            ).toFloat()
+            Color(
+                red = (LavaColor.red + pulse).coerceIn(0f, 1f),
+                green = (LavaColor.green + pulse * 0.5f).coerceIn(0f, 1f),
+                blue = LavaColor.blue,
+                alpha = LavaColor.alpha
+            )
+        }
         Tile.Pillar -> when (theme) {
             FloorTheme.Crypt -> CryptWall.lighten(0.06f)
             FloorTheme.Sewers -> SewerWall.lighten(0.06f)

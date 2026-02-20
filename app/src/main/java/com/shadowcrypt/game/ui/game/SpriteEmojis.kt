@@ -29,6 +29,15 @@ fun wallEmoji(theme: FloorTheme): String = when (theme) {
     FloorTheme.Void -> "\uD83D\uDFEA"      // 🟪
 }
 
+/** Returns list of wall emoji variants for a theme (used for visual variety). */
+fun wallEmojiVariants(theme: FloorTheme): List<String> = when (theme) {
+    FloorTheme.Crypt -> listOf("\uD83E\uDDF1", "\uD83E\uDEA8", "\u2B1B")     // 🧱 🪨 ⬛
+    FloorTheme.Sewers -> listOf("\uD83D\uDFEB", "\uD83E\uDDF1", "\uD83D\uDFE9") // 🟫 🧱 🟩
+    FloorTheme.Caverns -> listOf("\uD83E\uDEA8", "\uD83D\uDFEB", "\u2B1B")    // 🪨 🟫 ⬛
+    FloorTheme.Inferno -> listOf("\uD83D\uDFE5", "\uD83D\uDFE7", "\uD83E\uDDF1") // 🟥 🟧 🧱
+    FloorTheme.Void -> listOf("\uD83D\uDFEA", "\u2B1B", "\uD83D\uDD2E")       // 🟪 ⬛ 🔮
+}
+
 /**
  * Returns a decoration emoji for a floor tile, or null if no decoration.
  * Uses position hash for deterministic sparse placement (~15% of tiles).
